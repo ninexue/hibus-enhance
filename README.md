@@ -1,4 +1,4 @@
-## 编译wpa_supplicant过程
+## How to Compile Project
 
 对WiFi的操作，使用了wpa_suppliant。因此本篇讲述如何编译wpa_supplicant和wifimanager。
 
