@@ -26,57 +26,34 @@
 #include <arpa/inet.h>
 #include <hibus.h>
 
-#include "../include/wifi_intf.h"
-#include "../include/inetd.h"
+#include <hibus-busybox.h>
 
-static void wifi_signal_handler(hibus_conn* conn, const char* from_endpoint, const char* bubble_name, const char* bubble_data)
-{
-    printf("================================================================================================================================== get signal, %s\n", bubble_data);
-}
-
-static int wifi_scan_handler(hibus_conn* conn, const char* from_endpoint, const char* method_name, int ret_code, const char* ret_value)
-{
-    printf("============================================================================================================================== %s\n", ret_value);
-    return 0;
-}
+#define SOCKET_PATH			"/var/tmp/hibus.sock"
+#define APP_NAME_SUMMER		"cn.summer.hzy"
+#define RUNNER_NAME_TEST	"test"
 
 int main(void)
 {
-    int fd_socket = -1;
-    hibus_conn * hibus_context = NULL;
-    char * endpoint = NULL;
-    int ret_code = 0;
-//    char * ret_value = NULL;
+	int ret_code = 0;
+	int fd_hibus = -1;
+	hibus_conn * hibus_context = NULL;
 
-    // connect to hibus server
-    fd_socket = hibus_connect_via_unix_socket(SOCKET_PATH, AGENT_NAME, AGENT_RUNNER_NAME, &hibus_context);
-    if(fd_socket <= 0)
+	fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_NAME_SUMMER, RUNNER_NAME_TEST, &hibus_context);
+	if((fd_hibus <= 0) || (hibus_context == NULL))
+	{
+		fprintf(stderr, "Connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus));
+		exit(1);
+	}
+//	hibus_conn_set_user_data(hibus_context, &device);
+
+
+	while(1)
     {
-        printf("WIFI DAEMON: connect to HIBUS server error!\n");
-        exit(1);
+        ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
+        if(ret_code)
+            fprintf(stderr, "For hibus_wait_and_dispatch_packet, %s.\n", hibus_get_err_message(ret_code));
     }
 
-
-    endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST, APP_NAME_SETTINGS, RUNNER_NAME_INETD);
-    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_NET_OPEN_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_NET_CLOSE_DEVICE, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_NET_GET_DEVICES_STATUS, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-    //hibus_call_procedure_and_wait(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"abcd\":1234}", 1000, &ret_code, &ret_value);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_START_SCAN, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_CONNECT_AP, "{\"device\":\"wlp5s0\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\"}", 1000, wifi_scan_handler);
-//    ret_code = hibus_call_procedure(hibus_context, endpoint, METHOD_WIFI_GET_NETWORK_INFO, "{\"device\":\"wlp5s0\"}", 1000, wifi_scan_handler);
-    ret_code ++;
-    hibus_subscribe_event(hibus_context, endpoint, WIFISIGNALSTRENGTHCHANGED, wifi_signal_handler);
-
-    while(1) 
-    { 
-        hibus_wait_and_dispatch_packet(hibus_context, 1000);
-        sleep(1);
-    }
-
-
-    free(endpoint);
-    hibus_disconnect(hibus_context);
-
+	hibus_disconnect(hibus_context);
 	return 0;
 }

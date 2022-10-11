@@ -1,5 +1,15 @@
-cmake_minimum_required(VERSION 3.10)
-project(test-hibus)
-add_executable(test-hibus main.c)
-include_directories(${MINIGUI_INCLUDE_DIRS} ${PROJECT_INCLUDE_DIRS})
-target_link_libraries(test-hibus ${MINIGUI_LIBRARIES} hibus)
+cmake_minimum_required(VERSION 3.5)
+project(test)
+
+FIND_LIBRARY(libhibox NAMES hibox)
+FIND_LIBRARY(libhibus NAMES hibus)
+FIND_LIBRARY(libhibus-busybox NAMES hibus-busybox)
+
+INCLUDE_DIRECTORIES(BEFORE ${BUSYBOX_PUBLIC_HEADER_DIR})
+
+AUX_SOURCE_DIRECTORY(./ DIR_SRCS)
+
+# make library
+add_executable(test ${DIR_SRCS})
+#TARGET_LINK_LIBRARIES(test pthread dl ${libhibox} ${libhibus} ${hibus-busybox})
+TARGET_LINK_LIBRARIES(test pthread ${libhibox} ${libhibus} ${libhibus-busybox} dl)
