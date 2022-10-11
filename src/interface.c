@@ -30,6 +30,7 @@ hibus_user * init_runner(void *data)
 	if(user == NULL)
 		return NULL;
 
+	// connect to hibus
 	fd_hibus_busybox = hibus_connect_via_unix_socket(SOCKET_PATH,
 				APP_NAME_HIBUS, RUNNER_NAME_BUSYBOX, &user->context);
     if((fd_hibus_busybox <= 0) || (user->context == NULL))
@@ -40,8 +41,11 @@ hibus_user * init_runner(void *data)
 
 	user->fd = fd_hibus_busybox;
 	user->data = data;
+
+	// add user data
     hibus_conn_set_user_data(user->context, user);
 
+	// register remote procedure and event
 	fs_register(user->context);
 
 	return user;
@@ -56,9 +60,13 @@ int deinit_runner(hibus_user *user)
 
 	if(user->context)
 	{
+		// revoke remote procedure and event here
 		fs_revoke(user->context);
+
+		// disconnect to hibus server
 		hibus_disconnect(user->context);
 
+		// free user data
 		free(user);
 	}
 	else

@@ -10,6 +10,14 @@ ELSE ()
 ENDIF ()
 MESSAGE(STATUS "The CMake build type is: ${CMAKE_BUILD_TYPE}")
 
+OPTION(BUILD_LIBRARY "Use the Busybox runner as a library, loaded by Hibus server." OFF)
+
+if(BUILD_LIBRARY)
+  MESSAGE(STATUS "Build a share library.")
+  ADD_DEFINITIONS(-DBUILD_LIBRARY)
+endif()
+
+
 # set output dir, include library, include and test case
 FILE(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/public)
 FILE(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/public/lib)
