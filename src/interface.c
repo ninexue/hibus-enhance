@@ -32,7 +32,7 @@ hibus_user * init_runner(void *data)
 
 	// connect to hibus
 	fd_hibus_busybox = hibus_connect_via_unix_socket(SOCKET_PATH,
-				APP_NAME_HIBUS, RUNNER_NAME_BUSYBOX, &user->context);
+				APP_NAME, RUNNER_NAME_BUSYBOX, &user->context);
     if((fd_hibus_busybox <= 0) || (user->context == NULL))
     {
     	fprintf(stderr, "BUSYBOX RUNNER: BUSYBOX connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus_busybox));

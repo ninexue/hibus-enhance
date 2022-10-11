@@ -2,7 +2,11 @@
 #define __HIBUS_BUSYBOX_INTERFACE__
 
 #define SOCKET_PATH				"/var/tmp/hibus.sock"
-#define APP_NAME_HIBUS       	"cn.fmsoft.hybridos.hibus"
+#ifdef BUILD_LIBRARY
+	#define APP_NAME       		"cn.fmsoft.hybridos.hibus"
+#else
+	#define APP_NAME			"cn.summer.hzy"
+#endif
 #define RUNNER_NAME_BUSYBOX    	"busybox"
 
 
