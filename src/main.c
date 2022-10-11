@@ -29,10 +29,14 @@ int main(void)
 	int ret_code = 0;
 	hibus_user *user = NULL;
 
+	if(0)
+	{
 	hibus_json *jo = NULL;
 	hibus_json *jo_tmp = NULL;
 
 	json_object_object_get_ex(jo, "device", &jo_tmp);
+	}
+
 	user = init_runner(NULL);
 
 	if(user == NULL)
