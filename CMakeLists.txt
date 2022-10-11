@@ -11,6 +11,7 @@ ENDIF ()
 MESSAGE(STATUS "The CMake build type is: ${CMAKE_BUILD_TYPE}")
 
 # set output dir, include library, include and test case
+FILE(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/public)
 FILE(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/public/lib)
 FILE(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/public/include)
 FILE(MAKE_DIRECTORY ${PROJECT_SOURCE_DIR}/public/test)
