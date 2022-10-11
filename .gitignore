@@ -67,5 +67,5 @@ _deps
 *_include.cmake
 *_tests.cmake
 
-./build/
-./public/
+build/
+public/
