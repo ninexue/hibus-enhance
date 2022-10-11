@@ -14,8 +14,6 @@
 extern "C" {
 #endif
 
-hibus_user * init_runner(void *data);
-int deinit_runner(hibus_user *user);
 
 #ifdef __cplusplus
 }

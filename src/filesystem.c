@@ -979,42 +979,42 @@ void fs_register(hibus_conn *context)
     ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_LS, NULL, NULL, listDirectory);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_START_SCAN, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_LS, hibus_get_err_message(ret_code));
         return;
     }
 
     ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_RM, NULL, NULL, removeFile);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_STOP_SCAN, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_RM, hibus_get_err_message(ret_code));
         return;
     }
 
     ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_RMDIR, NULL, NULL, removeDirectory);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_CONNECT_AP, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_RMDIR, hibus_get_err_message(ret_code));
         return;
     }
 
     ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_MKDIR, NULL, NULL, makeDirectory);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_DISCONNECT_AP, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_MKDIR, hibus_get_err_message(ret_code));
         return;
     }
 
     ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_UNLINK, NULL, NULL, unlinkFile);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_NETWORK_INFO, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_UNLINK, hibus_get_err_message(ret_code));
         return;
     }
 
     ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_TOUCH, NULL, NULL, touchFile);
     if(ret_code)
     {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_WIFI_GET_NETWORK_INFO, hibus_get_err_message(ret_code));
+        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_TOUCH, hibus_get_err_message(ret_code));
         return;
     }
 /*
@@ -1047,4 +1047,3 @@ void fs_revoke(hibus_conn *context)
 //    hibus_revoke_event(context, WIFIHOTSPOTSCHANGED);
 
 }
-

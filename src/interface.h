@@ -1,5 +1,5 @@
-#ifndef __HIBUS_BUSYBOX_HELPER__
-#define __HIBUS_BUSYBOX_HELPER__
+#ifndef __HIBUS_BUSYBOX_INTERFACE__
+#define __HIBUS_BUSYBOX_INTERFACE__
 
 #define SOCKET_PATH				"/var/tmp/hibus.sock"
 #define APP_NAME_HIBUS       	"cn.fmsoft.hybridos.hibus"
@@ -20,9 +20,11 @@ typedef struct _hibus_user	hibus_user;
 extern "C" {
 #endif
 
+hibus_user * init_runner(void *data);
+int deinit_runner(hibus_user *user);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  // __HIBUS_BUSYBOX_HELPER__
+#endif  // __HIBUS_BUSYBOX_INTERFACE__
