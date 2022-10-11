@@ -46,7 +46,6 @@ int main(void)
 	}
 //	hibus_conn_set_user_data(hibus_context, &device);
 
-
 	while(1)
     {
         ret_code = hibus_wait_and_dispatch_packet(hibus_context, 1000);
