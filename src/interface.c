@@ -74,6 +74,7 @@ int deinit_runner(void)
 
 		// free hiuser
 		free(hiuser);
+		hiuser = NULL;
 	}
 	else
 		ret = ERROR_BUSYBOX_INVALID_PARAM;

@@ -5,7 +5,7 @@ FIND_LIBRARY(libhibox NAMES hibox)
 FIND_LIBRARY(libhibus NAMES hibus)
 
 # get all header files
-FILE(COPY hibus-busybox.h DESTINATION ${BUSYBOX_PUBLIC_HEADER_DIR})
+FILE(COPY hibus_busybox.h DESTINATION ${BUSYBOX_PUBLIC_HEADER_DIR})
 
 #AUX_SOURCE_DIRECTORY(./ DIR_SRCS)
 set(LIB_SRCS

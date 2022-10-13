@@ -26,7 +26,7 @@
 #include <arpa/inet.h>
 #include <hibus.h>
 
-#include <hibus-busybox.h>
+#include <hibus_busybox.h>
 
 #define SOCKET_PATH			"/var/tmp/hibus.sock"
 #define APP_NAME_SUMMER		"cn.summer.hzy"

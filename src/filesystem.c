@@ -20,10 +20,20 @@
 #include <hibox/json.h>
 
 #include "filesystem.h"
+#include "interface.h"
 #include "hibus_busybox.h"
 
-extern const char *op_errors[];
-extern hibus_conn * hibus_context_inetd;
+static struct busybox_procedure fs_procedure[] =
+{
+	{METHOD_HIBUS_BUSYBOX_LS, 		listDirectory},
+	{METHOD_HIBUS_BUSYBOX_RM, 		removeFile},
+	{METHOD_HIBUS_BUSYBOX_RMDIR, 	removeDirectory},
+	{METHOD_HIBUS_BUSYBOX_MKDIR, 	makeDirectory},
+	{METHOD_HIBUS_BUSYBOX_UNLINK, 	unlinkFile},
+	{METHOD_HIBUS_BUSYBOX_TOUCH, 	touchFile}
+};
+
+static struct busybox_event fs_event [] = {};
 
 char * listDirectory(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
 {
@@ -972,78 +982,51 @@ failed:
 */
     return ret_string;
 }
+
+
 void fs_register(hibus_conn *context)
 {
+	size_t i = 0;
+	size_t size = sizeof(fs_procedure) / sizeof(struct busybox_procedure);
     int ret_code = 0;
 
-    ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_LS, NULL, NULL, listDirectory);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_LS, hibus_get_err_message(ret_code));
-        return;
-    }
+	for(i = 0; i < size; i++)
+	{
+    	ret_code = hibus_register_procedure(context, fs_procedure[i].name,
+										NULL, NULL, fs_procedure[i].handler);
+	    if(ret_code)
+    	{
+        	fprintf(stderr, "Busybox--filesystem: Error for register procedure"
+							"%s, %s.\n", fs_procedure[i].name,
+							hibus_get_err_message(ret_code));
+	        return;
+    	}
+	}
 
-    ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_RM, NULL, NULL, removeFile);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_RM, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_RMDIR, NULL, NULL, removeDirectory);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_RMDIR, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_MKDIR, NULL, NULL, makeDirectory);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_MKDIR, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_UNLINK, NULL, NULL, unlinkFile);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_UNLINK, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_procedure(context, METHOD_HIBUS_BUSYBOX_TOUCH, NULL, NULL, touchFile);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register procedure %s, %s.\n", METHOD_HIBUS_BUSYBOX_TOUCH, hibus_get_err_message(ret_code));
-        return;
-    }
-/*
-    ret_code = hibus_register_event(context, WIFIHOTSPOTSCHANGED, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", WIFIHOTSPOTSCHANGED, hibus_get_err_message(ret_code));
-        return;
-    }
-
-    ret_code = hibus_register_event(context, WIFISIGNALSTRENGTHCHANGED, NULL, NULL);
-    if(ret_code)
-    {
-        fprintf(stderr, "WIFI DAEMON: Error for register event %s, %s.\n", WIFISIGNALSTRENGTHCHANGED, hibus_get_err_message(ret_code));
-        return;
-    }
-*/
+	size = sizeof(fs_event) / sizeof(struct busybox_event);
+	for(i = 0; i < size; i++)
+	{
+    	ret_code = hibus_register_event(context, fs_event[i].name, NULL, NULL);
+	    if(ret_code)
+    	{
+        	fprintf(stderr, "Busybox--filesystem: Error for register event"
+							"%s, %s.\n",
+							fs_event[i].name, hibus_get_err_message(ret_code));
+	        return;
+    	}
+	}
 }
 
 void fs_revoke(hibus_conn *context)
 {
-    hibus_revoke_procedure(context, METHOD_HIBUS_BUSYBOX_LS);
-    hibus_revoke_procedure(context, METHOD_HIBUS_BUSYBOX_RM);
-    hibus_revoke_procedure(context, METHOD_HIBUS_BUSYBOX_RMDIR);
-    hibus_revoke_procedure(context, METHOD_HIBUS_BUSYBOX_MKDIR);
-    hibus_revoke_procedure(context, METHOD_HIBUS_BUSYBOX_UNLINK);
-    hibus_revoke_procedure(context, METHOD_HIBUS_BUSYBOX_TOUCH);
+	size_t i = 0;
+	size_t size = sizeof(fs_procedure) / sizeof(struct busybox_procedure);
 
-//    hibus_revoke_event(context, WIFISIGNALSTRENGTHCHANGED);
-//    hibus_revoke_event(context, WIFIHOTSPOTSCHANGED);
+	for(i = 0; i < size; i++)
+    	hibus_revoke_procedure(context, fs_procedure[i].name);
+
+	size = sizeof(fs_event) / sizeof(struct busybox_event);
+	for(i = 0; i < size; i++)
+		hibus_revoke_event(context, fs_event[i].name);
 
 }

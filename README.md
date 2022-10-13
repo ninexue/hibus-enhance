@@ -1,173 +1,61 @@
-# 合璧操作系统设置应用中网络管理行者的设计
+# Hibus busybox 协议
 
-【主题】合璧操作系统设置应用中网络管理行者的设计  
-【摘要】本文描述了基于hiBus的行者@localhost/cn.fmsoft.hybridos.settings/inetd，所提供的远程过程及可订阅事件。同时对设备引擎必须完成的接口进行了阐述。  
-【版本】1.0  
-【作者】耿岳  
-【日期】2020 年 12 月  
-【状态】草稿  
+## busybox 提供给应用的接口
 
-**版权声明**
+`busybox`只提供远程过程，不提供订阅事件。
 
-版权所有 &copy; 2020 北京飞漫软件技术有限公司  
-保留所有权利
+### busybox行者提供的远程过程
 
-此文档不受合璧操作系统相关软件开源许可证的管辖。
+#### 显示指定目录下的文件
 
-飞漫软件公开此文档的目标，用于向开发者解释合璧操作系统的设计原理或者相关规范。在未获得飞漫软件书面许可之前，任何人不得复制或者分发本文档的全部或部分内容，或利用本文档描绘的技术思路申请专利、撰写学术论文等。
-
-本文涉及到的飞漫软件或其合作伙伴的注册商标或商标，有关其详细列表，请查阅文档末尾。
-
-**目录**
-- [inetd行者的软件结构](#inetd行者的软件结构)
-- [配置文件](#配置文件)
-   + [配置文件的内容](#配置文件的内容)
-- [inetd行者提供给应用的接口](#inetd行者提供给应用的接口)
-   + [inetd行者提供的远程过程](#inetd行者提供的远程过程)
-      * [打开网络设备](#打开网络设备)
-      * [关闭网络设备](#关闭网络设备)
-      * [查询网络设备状态](#查询网络设备状态)
-      * [开始扫描网络热点](#开始扫描网络热点)
-      * [停止网络热点扫描](#停止网络热点扫描)
-      * [连接网络热点](#连接网络热点)
-      * [中断网络连接](#中断网络连接)
-      * [获得当前网络详细信息](#获得当前网络详细信息)
-   + [inetd行者提供的可订阅事件](#inetd行者提供的可订阅事件)
-      * [网络设备发生变化](#网络设备发生变化)
-      * [网络热点列表发生变化](#网络热点列表发生变化)
-      * [当前网络信号强度发生变化](#当前网络信号强度发生变化)
-- [inetd行者工作流程](#inetd行者工作流程)
-- [设备引擎需要完成的接口](#设备引擎需要完成的接口)
-   + [WiFi设备引擎](#wifi设备引擎)
-      * [函数集的获得](#函数集的获得)
-      * [打开设备](#打开设备)
-      * [关闭设备](#关闭设备)
-      * [连接网络](#连接网络)
-      * [断开网络](#断开网络)
-      * [获取WiFi信号强度](#获取wifi信号强度)
-      * [开始WiFi网络扫描](#开始wifi网络扫描)
-      * [停止WiFi网络扫描](#停止wifi网络扫描)
-      * [获得热点信息](#获得热点信息)
-- [错误代码表](#错误代码表)
-- [附：商标声明](#附商标声明)
-
-
-## inetd行者的软件结构
-
-目前各个系统的网络连接方式主要有三种：无线网（WiFi）、以太网（Ethernet）、手机网络（Mobile）。系统设置中的inetd行者，主要负责管理这些网络，包括：连接、监控、切换等。
-
-现阶段首先实现WiFi网络管理的各项功能。
-
-inetd行者在系统中的位置如下图：
-
-```c
- ------------------------------------------------------------
-|        APP1        |        APP2        |       APP3       |
- ------------------------------------------------------------
-|                      hiBus Server(hiBusd)                  |
- ------------------------------------------------------------ 
-|              cn.fmsoft.hybridos.settings/inetd             |
- ------------------------------------------------------------
-|    libwifi.so    |   libethernet.so   |    libmobile.so    |
- ------------------------------------------------------------
-|                  Linux Kernel/Drivers                      |
- ------------------------------------------------------------
-```
-
-整个系统包含如下：
-
-- APP层：可以是JS代码，也可以是C代码，通过hiBus总线，完成用户对网络的操作；
-- hiBus Server：负责数据通信、事件分发、及连接的管理；
-- cn.fmsoft.hybridos.settings/inetd：inetd行者，负责对网络设备的连接、中断、切换等。通过hiBus Server，为APP层提供设备事件、以及远程过程；
-- libxxx.so：网络设备引擎。每个引擎完成一种类型的网络操作；
-- Linux Kernel / Drivers：对设备的底层操作。
-
-在不同平台，inetd行者代码不会发生任何变化。芯片厂家或用户只需按照设备引擎接口，完成相应的功能即可。
-
-## 配置文件
-
-inetd行者的各项设置，记录在配置文件里。
-
-### 配置文件的内容
-
-配置文件内容如下：
-
-```c
-[device]
-device0_name=wlp5s0         // name of network device0
-device1_name=eth0           // name of network device1
-device2_name=eth1           // name of network device2
-
-[wlp5s0]
-type=wifi                   // device type
-engine=libwifi.so           // library of device engine
-priority=2                  // priority in switch devices
-start=disabled              // do not start device when power on
-scan_time=30                // interval of scan time. unit: second
-
-[eth0]
-type=ethernet               // device type
-engine=libethernet.so       // library of device engine
-priority=1                  // priority in switch devices
-start=enabled               // start device when power on
-
-```
-
-现阶段，没有实现`start`和`priority`两个参数对应的功能。
-
-## inetd行者提供给应用的接口
-
-inetd负责管理和操作各个网络设备，所提供的远程过程及可订阅事件，如下所述。
-
-### inetd行者提供的远程过程
-
-强制规定：远程过程的参数，以及执行结果，使用JSON格式字符串。下面仅对每个过程的参数及返回值，进行说明。
-
-#### 打开网络设备
-
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/openDevice`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/ls`
 - 参数：
-   + `device`：网络设备名称；
+   + `path`：指定的目录；
 ```json
-    { 
-        "device":"device_name",
+    {
+        "path":"full_path",
     }
 ```
 - 返回值：
    + `errCode`：返回错误编码，见附表；
    + `errMsg`：错误信息。
 ```json
-    { 
+    {
         "errCode":0,
         "errMsg":"OK"
     }
 ```
 
-#### 关闭网络设备
+#### 删除文件
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/closeDevice`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rm`
 - 参数：
-   + `device`：网络设备名称；
+   + `fileName`：要删除文件的全路径；
 ```json
-    { 
-        "device":"device_name"
+    {
+        "fileName":"full_path"
     }
 ```
 - 返回值：
    + `errCode`：返回错误编码，见附表；
    + `errMsg`：错误信息。
 ```json
-    { 
+    {
         "errCode":0,
         "errMsg":"OK"
     }
 ```
 
-#### 查询网络设备状态
+#### 删除目录
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/getNetworkDevicesStatus`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rmdir`
 - 参数：
-   + 无
+   + `fileName`：要删除目录的全路径；
+```json
+    {
+        "fileName":"full_path"
+    }
+```
 - 返回值：
    + `data`：返回的数据：
      + `device`：网络设备名；
@@ -202,14 +90,14 @@ inetd负责管理和操作各个网络设备，所提供的远程过程及可订
 如没有查到网络设备，则`data`为空数组。
 
 
-#### 开始扫描网络热点
+#### 创建目录
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/wifiStartScanHotspots`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/mkdir`
 - 参数：
-   + `device`：网络设备名称；
+   + `fileName`：要创建目录的全路径；
 ```json
-    { 
-        "device":"device_name",
+    {
+        "fileName":"full_path"
     }
 ```
 - 返回值：
@@ -249,7 +137,7 @@ inetd负责管理和操作各个网络设备，所提供的远程过程及可订
 
 #### 停止网络热点扫描 
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/wifiStopScanHotspots`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/wifiStopScanHotspots`
 - 参数：
    + `device`：网络设备名称；
 ```json
@@ -267,12 +155,12 @@ inetd负责管理和操作各个网络设备，所提供的远程过程及可订
     }
 ```
 
-inetd行者将停止后台进行的定时热点扫描操作，这将导致停止发送`WIFIHOTSPOTSCHANGED`和`NETWORKDEVICECHANGED`泡泡。
+busybox行者将停止后台进行的定时热点扫描操作，这将导致停止发送`WIFIHOTSPOTSCHANGED`和`NETWORKDEVICECHANGED`泡泡。
 
 
 #### 连接网络热点
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/wifiConnect`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/wifiConnect`
 - 参数：
    + `device`：网络设备名称；
    + `ssid`：网络名称；
@@ -303,7 +191,7 @@ inetd行者将停止后台进行的定时热点扫描操作，这将导致停止
 
 #### 中断网络连接
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/wifiDisconnect`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/wifiDisconnect`
 - 参数：
    + `device`：网络设备名称；
 ```json
@@ -323,7 +211,7 @@ inetd行者将停止后台进行的定时热点扫描操作，这将导致停止
 
 #### 获得当前网络详细信息
 
-- 过程名称：`@localhost/cn.fmsoft.hybridos.settings/inetd/wifiGetNetworkInfo`
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/wifiGetNetworkInfo`
 - 参数：
    + `device`：网络设备名称；
 ```json
@@ -365,7 +253,7 @@ inetd行者将停止后台进行的定时热点扫描操作，这将导致停止
 如没有查到当前网络详细信息，则`data`为空，`errCode`返回错误原因。
 
 
-### inetd行者提供的可订阅事件
+### busybox行者提供的可订阅事件
 
 #### 网络设备发生变化 
 
@@ -429,7 +317,7 @@ inetd行者将停止后台进行的定时热点扫描操作，这将导致停止
     }
 ```
 - 使用描述：
-   + 当调用`openDevice`过程后，inetd行者将定时扫描WiFi热点，并将相邻两次扫描所获得的热点列表差值，通过该事件发送给订阅该事件的行者；
+   + 当调用`openDevice`过程后，busybox行者将定时扫描WiFi热点，并将相邻两次扫描所获得的热点列表差值，通过该事件发送给订阅该事件的行者；
    + 如要获得完整的热点列表，则调用过程`wifiStartScanHotspots`，通过其返回值获得；
    + `changed`数组中的元素，仅返回变化的属性。没有变化的属性并不返回。
 
@@ -453,9 +341,9 @@ inetd行者将停止后台进行的定时热点扫描操作，这将导致停止
    + 该事件的发送间隔，由配置文件中的`scan_time`确定。
 
 
-## inetd行者工作流程
+## busybox行者工作流程
 
-inetd行者工作流程如下：
+busybox行者工作流程如下：
 
 1. 两次fork操作，成为守护进程；
 2. 调用`hibus_connect_via_unix_socket()`，建立与hiBus服务器的连接；
@@ -475,9 +363,9 @@ inetd行者工作流程如下：
 
 ### WiFi设备引擎
 
-设备引擎必须完成如下描述的所有接口，供inetd行者调用。
+设备引擎必须完成如下描述的所有接口，供busybox行者调用。
 
-在头文件 inetd.h 中，有如下声明：
+在头文件 busybox.h 中，有如下声明：
 
 ```c
 struct _wifi_context;
@@ -509,7 +397,7 @@ typedef struct _hiWiFiDeviceOps
 
 #### 函数集的获得
 
-inetd行者首先调用如下函数，获得操作WiFi设备所需的全部函数指针。
+busybox行者首先调用如下函数，获得操作WiFi设备所需的全部函数指针。
 
 ```c
 const hiWiFiDeviceOps * __wifi_device_ops_get(void);
@@ -588,7 +476,7 @@ int get_signal_strength(wifi_context * context);
 
 #### 开始WiFi网络扫描
 
-WiFi网络扫描是一个异步过程。inetd行者调用该函数后立刻返回。设备引擎开始扫描，其扫描结果将通过inetd行者调用`hiWiFiDeviceOps->get_hotspots()`函数返回。
+WiFi网络扫描是一个异步过程。busybox行者调用该函数后立刻返回。设备引擎开始扫描，其扫描结果将通过busybox行者调用`hiWiFiDeviceOps->get_hotspots()`函数返回。
 
 ```c
 int start_scan(wifi_context * context);
@@ -616,7 +504,7 @@ int stop_scan(wifi_context * context);
 
 #### 获得热点信息
 
-inetd行者定时调用该函数，获得WiFi热点的信息。
+busybox行者定时调用该函数，获得WiFi热点的信息。
 
 ```c
 unsigned int get_hotspots (wifi_context * context, wifi_hotspot ** hotspots);
@@ -628,7 +516,7 @@ unsigned int get_hotspots (wifi_context * context, wifi_hotspot ** hotspots);
 - 返回值：
    + `hotspots`数组的个数。
 
-`hotspots`数组空间由设备引擎开辟，由调用者（inetd）释放。
+`hotspots`数组空间由设备引擎开辟，由调用者（busybox）释放。
 
 当设备引擎搜索热点完毕后，在`hotspots`数组最后添加一个元素，该元素的`ssid[0] = 0`，表示搜索过程完毕。
 

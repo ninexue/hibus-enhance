@@ -11,6 +11,16 @@
 
 #define RUNNER_NAME_BUSYBOX    	"busybox"
 
+struct busybox_procedure
+{
+    const char *name;
+    hibus_method_handler handler;
+};
+
+struct busybox_event
+{
+    const char *name;
+};
 
 // structure for hibus user
 struct _hibus_user
