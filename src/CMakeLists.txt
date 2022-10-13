@@ -9,6 +9,7 @@ FILE(COPY hibus_busybox.h DESTINATION ${BUSYBOX_PUBLIC_HEADER_DIR})
 
 #AUX_SOURCE_DIRECTORY(./ DIR_SRCS)
 set(LIB_SRCS
+	helper.c
     interface.c
     filesystem.c
 )
