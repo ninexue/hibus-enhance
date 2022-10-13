@@ -36,10 +36,29 @@ typedef struct _hibus_user	hibus_user;
 extern "C" {
 #endif
 
-// initialize library, connect to hibus and register procedure and event
-int init_runner(hibus_conn **con, void *data);
 
-// deinitialize library, free the resource
+/****************************************************************************
+ * Subroutine:  init_runner 
+ * Function:    connect to hibus and register procedure and event
+ * Input:       conn[I/O], get hibus_conn for connection
+ *              data[I], user data
+ * Output:      error code of operation, 0 for successful.
+ * Description:
+ * Date:        2022/07/20
+ * ModifyRecord:
+ * *************************************************************************/
+int init_runner(hibus_conn **conn, void *data);
+
+
+/****************************************************************************
+ * Subroutine:  deinit_runner 
+ * Function:    disconnect to hibus and revoke procedure and event
+ * Input:       none
+ * Output:      error code of operation, 0 for successful.
+ * Description:
+ * Date:        2022/07/20
+ * ModifyRecord:
+ * *************************************************************************/
 int deinit_runner(void);
 
 #ifdef __cplusplus

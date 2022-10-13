@@ -35,7 +35,8 @@ static struct busybox_procedure fs_procedure[] =
 
 static struct busybox_event fs_event [] = {};
 
-char * listDirectory(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * listDirectory(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(8192);
 /*
@@ -154,7 +155,8 @@ failed:
 
 }
 
-char * removeFile(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * removeFile(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(4096);
 /*
@@ -248,7 +250,8 @@ failed:
     return ret_string;
 }
 
-char * removeDirectory(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(4096);
 /*
@@ -440,7 +443,8 @@ failed:
     return ret_string;
 }
 
-char * makeDirectory(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(4096);
 /*
@@ -544,7 +548,8 @@ failed:
     return ret_string;
 }
 
-char * unlinkFile(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(4096);
 /*
@@ -764,7 +769,8 @@ failed:
 }
 
 
-char * touchFile(hibus_conn* conn, const char* from_endpoint, const char* to_method, const char* method_param, int *err_code)
+char * touchFile(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(4096);
 /*
