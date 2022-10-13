@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include <pwd.h>
 
+#include "helper.h"
+
 uid_t get_usr_id(const char *name)
 {
     struct passwd *p;

@@ -15,11 +15,12 @@
 #include <linux/wireless.h>
 #include <arpa/inet.h>
 #include <errno.h>
-
 #include <hibus.h>
+
+#include "hibus_busybox.h"
+#include "helper.h"
 #include "filesystem.h"
 #include "interface.h"
-#include "hibus_busybox.h"
 
 static hibus_user *hiuser = NULL;
 

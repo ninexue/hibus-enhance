@@ -37,7 +37,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/public/test)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/public/lib)
 
 # set compile option
-ADD_DEFINITIONS(-Wall -Wsign-compare -Wtype-limits -Wuninitialized -Wshift-negative-value -Wclobbered -Wignored-qualifiers -Werror -fmax-errors=10 -Wno-error=deprecated-declarations -Wno-deprecated-declarations)
+ADD_DEFINITIONS(-Wall -Wsign-compare -Wtype-limits -Wuninitialized -Wshift-negative-value -Wclobbered -Wignored-qualifiers -Werror -fmax-errors=10 -Wno-error=deprecated-declarations -Wno-deprecated-declarations -fvisibility=hidden)
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
 # set sub-directory

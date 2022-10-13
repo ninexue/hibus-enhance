@@ -1,6 +1,8 @@
 #ifndef __HIBUS_BUSYBOX_INTERFACE__
 #define __HIBUS_BUSYBOX_INTERFACE__
 
+#define LIB_VISIBLE __attribute__((visibility("default")))
+
 #define SOCKET_PATH				"/var/tmp/hibus.sock"
 
 #ifdef BUILD_HIBUS_NATIVE
@@ -38,7 +40,7 @@ extern "C" {
 
 
 /****************************************************************************
- * Subroutine:  init_runner 
+ * Subroutine:  init_runner
  * Function:    connect to hibus and register procedure and event
  * Input:       conn[I/O], get hibus_conn for connection
  *              data[I], user data
@@ -47,11 +49,11 @@ extern "C" {
  * Date:        2022/07/20
  * ModifyRecord:
  * *************************************************************************/
-int init_runner(hibus_conn **conn, void *data);
+LIB_VISIBLE int init_runner(hibus_conn **conn, void *data);
 
 
 /****************************************************************************
- * Subroutine:  deinit_runner 
+ * Subroutine:  deinit_runner
  * Function:    disconnect to hibus and revoke procedure and event
  * Input:       none
  * Output:      error code of operation, 0 for successful.
@@ -59,7 +61,7 @@ int init_runner(hibus_conn **conn, void *data);
  * Date:        2022/07/20
  * ModifyRecord:
  * *************************************************************************/
-int deinit_runner(void);
+LIB_VISIBLE int deinit_runner(void);
 
 #ifdef __cplusplus
 }
