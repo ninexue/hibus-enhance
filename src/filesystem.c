@@ -20,7 +20,7 @@
 #include <hibox/json.h>
 
 #include "filesystem.h"
-#include "hibus-busybox.h"
+#include "hibus_busybox.h"
 
 extern const char *op_errors[];
 extern hibus_conn * hibus_context_inetd;

@@ -17,60 +17,66 @@
 #include <errno.h>
 
 #include <hibus.h>
-#include "hibus-busybox.h"
 #include "filesystem.h"
 #include "interface.h"
+#include "hibus_busybox.h"
 
-hibus_user * init_runner(void *data)
+static hibus_user *hiuser = NULL;
+
+int init_runner(hibus_conn **conn, void *data)
 {
 	int fd_hibus_busybox = -1;
-	hibus_user *user = NULL;
 
-	user = calloc(sizeof(hibus_user), 1);
-	if(user == NULL)
-		return NULL;
+	if(conn == NULL)
+		return ERROR_BUSYBOX_INVALID_PARAM;
+
+	hiuser = calloc(sizeof(hibus_user), 1);
+	if(hiuser == NULL)
+		return ERROR_BUSYBOX_INSUFFICIENT_MEM;
 
 	// connect to hibus
 	fd_hibus_busybox = hibus_connect_via_unix_socket(SOCKET_PATH,
-				APP_NAME, RUNNER_NAME_BUSYBOX, &user->context);
-    if((fd_hibus_busybox <= 0) || (user->context == NULL))
+				APP_NAME, RUNNER_NAME_BUSYBOX, &hiuser->context);
+    if((fd_hibus_busybox <= 0) || (hiuser->context == NULL))
     {
-    	fprintf(stderr, "BUSYBOX RUNNER: BUSYBOX connects to HIBUS server error, %s.\n", hibus_get_err_message(fd_hibus_busybox));
-        return NULL;
+    	fprintf(stderr, "BUSYBOX RUNNER: BUSYBOX connects to HIBUS server"
+						"error, %s.\n", hibus_get_err_message(fd_hibus_busybox));
+        return ERROR_BUSYBOX_CONNECT_HIBUS;
     }
 
-	user->fd = fd_hibus_busybox;
-	user->data = data;
+	hiuser->fd = fd_hibus_busybox;
+	hiuser->data = data;
 
-	// add user data
-    hibus_conn_set_user_data(user->context, user);
+	hibus_conn_set_user_data(hiuser->context, hiuser);
 
 	// register remote procedure and event
-	fs_register(user->context);
+	fs_register(hiuser->context);
 
-	return user;
+	*conn = hiuser->context;
+
+	return ERROR_BUSYBOX_OK;
 }
 
-int deinit_runner(hibus_user *user)
+int deinit_runner(void)
 {
-	int ret = 0;
+	int ret = ERROR_BUSYBOX_OK;
 
-	if(user == NULL)
-		return -1;
+	if(hiuser == NULL)
+		return ERROR_BUSYBOX_INVALID_PARAM;
 
-	if(user->context)
+	if(hiuser->context)
 	{
 		// revoke remote procedure and event here
-		fs_revoke(user->context);
+		fs_revoke(hiuser->context);
 
 		// disconnect to hibus server
-		hibus_disconnect(user->context);
+		hibus_disconnect(hiuser->context);
 
-		// free user data
-		free(user);
+		// free hiuser
+		free(hiuser);
 	}
 	else
-		ret = -1;
+		ret = ERROR_BUSYBOX_INVALID_PARAM;
 
 	return ret;
 }

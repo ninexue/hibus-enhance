@@ -10,11 +10,13 @@ ELSE ()
 ENDIF ()
 MESSAGE(STATUS "The CMake build type is: ${CMAKE_BUILD_TYPE}")
 
-OPTION(BUILD_LIBRARY "Use the Busybox runner as a library, loaded by Hibus server." OFF)
+OPTION(BUILD_HIBUS_NATIVE "Build the library as build-in component for Hibus." ON)
 
-if(BUILD_LIBRARY)
-  MESSAGE(STATUS "Build a share library.")
-  ADD_DEFINITIONS(-DBUILD_LIBRARY)
+if(BUILD_HIBUS_NATIVE)
+  MESSAGE(STATUS "Build the library as build-in runner of Hibus application.")
+  ADD_DEFINITIONS(-DBUILD_HIBUS_NATIVE)
+else()
+  MESSAGE(STATUS "Build the library as a runner of an appliction other than Hibus. ")
 endif()
 
 
