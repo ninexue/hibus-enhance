@@ -48,7 +48,7 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
 
-    sprintf(ret_string, "{\"data\":[");
+    sprintf(ret_string, "{\"list\":[");
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_LS,
@@ -58,7 +58,6 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // analyze json
     jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
     if(jo == NULL)
     {
@@ -66,125 +65,260 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // get device name
+    // get euid
     if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
     {
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
         goto failed;
     }
-
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
-/*
-    const char * device_name = NULL;
-    int index = -1;
-    int ret_code = ERR_NO;
-    WiFi_device * wifi_device = NULL;
 
-    memset(ret_string, 0, 8192);
-    sprintf(ret_string, "{\"data\":[");
+	// get file name
+    char dir_name[PATH_MAX];
+    char filename[PATH_MAX];
+    const char *string_filename = NULL;
+    const char *filter = NULL;
+    struct wildcard_list *wildcard = NULL;
+    struct wildcard_list *temp_wildcard = NULL;
+    char au[10] = {0};
+    int i = 0;
 
-    // get device array
-    network_device * device = hibus_conn_get_user_data(conn);
-    if(device == NULL)
-    {
-        ret_code = ERR_NONE_DEVICE_LIST;
-        goto failed;
+    if ((argv == NULL) || (nr_args < 1)) {
+        purc_set_error (PURC_ERROR_INVALID_VALUE);
+        return PURC_VARIANT_INVALID;
     }
 
-    // get procedure name
-    if(strncasecmp(to_method, METHOD_WIFI_START_SCAN, strlen(METHOD_WIFI_START_SCAN)))
-    {
-        ret_code = ERR_WRONG_PROCEDURE;
-        goto failed;
+    if (!purc_variant_is_string (argv[0])) {
+        purc_set_error (PURC_ERROR_WRONG_DATA_TYPE);
+        return PURC_VARIANT_INVALID;
     }
 
-    // analyze json
-    jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
-    if(jo == NULL)
-    {
-        ret_code = ERR_WRONG_JSON;
-        goto failed;
+    // get the file name
+    string_filename = purc_variant_get_string_const (argv[0]);
+    strcpy (dir_name, string_filename);
+
+    if (access(dir_name, F_OK | R_OK) != 0) {
+        purc_set_error (PURC_ERROR_BAD_SYSTEM_CALL);
+        return PURC_VARIANT_INVALID;
     }
 
-    // get device name
-    if(json_object_object_get_ex(jo, "device", &jo_tmp) == 0)
-    {
-        ret_code = ERR_WRONG_JSON;
-        goto failed;
+    // get the filter
+    if ((nr_args > 1) && (argv[1] == NULL ||
+            (!purc_variant_is_string (argv[1])))) {
+        purc_set_error (PURC_ERROR_WRONG_DATA_TYPE);
+        return PURC_VARIANT_INVALID;
+    }
+    if ((nr_args > 1) && (argv[1] != NULL))
+        filter = purc_variant_get_string_const (argv[1]);
+
+    // get filter array
+    if (filter) {
+        size_t length = 0;
+        const char *head = pcdvobjs_get_next_option (filter, ";", &length);
+        while (head) {
+            if (wildcard == NULL) {
+                wildcard = malloc (sizeof(struct wildcard_list));
+                if (wildcard == NULL)
+                    goto error;
+                temp_wildcard = wildcard;
+            }
+            else {
+                temp_wildcard->next = malloc (sizeof(struct wildcard_list));
+                if (temp_wildcard->next == NULL)
+                    goto error;
+                temp_wildcard = temp_wildcard->next;
+            }
+            temp_wildcard->next = NULL;
+            temp_wildcard->wildcard = malloc (length + 1);
+            if (temp_wildcard->wildcard == NULL)
+                goto error;
+            strncpy(temp_wildcard->wildcard, head, length);
+            *(temp_wildcard->wildcard + length) = 0x00;
+            pcdvobjs_remove_space (temp_wildcard->wildcard);
+            head = pcdvobjs_get_next_option (head + length + 1, ";", &length);
+        }
     }
 
-    device_name = json_object_get_string(jo_tmp);
-    if(device_name && strlen(device_name) == 0)
-    {
-        ret_code = ERR_NO_DEVICE_NAME_IN_PARAM;
-        goto failed;
+    // get the dirctory content
+    DIR *dir = NULL;
+    struct dirent *ptr = NULL;
+    purc_variant_t obj_var = PURC_VARIANT_INVALID;
+    struct stat file_stat;
+
+    if ((dir = opendir (dir_name)) == NULL) {
+        purc_set_error (PURC_ERROR_BAD_SYSTEM_CALL);
+        goto error;
     }
 
-    // device does exist?
-    index = get_device_index(device, device_name);
-    if(index == -1)
+    ret_var = purc_variant_make_array (0, PURC_VARIANT_INVALID);
+    while ((ptr = readdir(dir)) != NULL)
     {
-        ret_code = ERR_NO_DEVICE_IN_SYSTEM;
-        goto failed;
+        if (strcmp (ptr->d_name,".") == 0 || strcmp(ptr->d_name, "..") == 0)
+            continue;
+
+        // use filter
+        temp_wildcard = wildcard;
+        while (temp_wildcard) {
+            if (wildcard_cmp (ptr->d_name, temp_wildcard->wildcard))
+                break;
+            temp_wildcard = temp_wildcard->next;
+        }
+        if (wildcard && (temp_wildcard == NULL))
+            continue;
+
+        obj_var = purc_variant_make_object (0, PURC_VARIANT_INVALID,
+                PURC_VARIANT_INVALID);
+
+        strcpy (filename, dir_name);
+        strcat (filename, "/");
+        strcat (filename, ptr->d_name);
+
+        if (stat(filename, &file_stat) < 0)
+            continue;
+
+        // name
+        val = purc_variant_make_string (ptr->d_name, false);
+        purc_variant_object_set_by_static_ckey (obj_var, "name", val);
+        purc_variant_unref (val);
+
+        // dev
+        val = purc_variant_make_number (file_stat.st_dev);
+        purc_variant_object_set_by_static_ckey (obj_var, "dev", val);
+        purc_variant_unref (val);
+
+        // inode
+        val = purc_variant_make_number (ptr->d_ino);
+        purc_variant_object_set_by_static_ckey (obj_var, "inode", val);
+        purc_variant_unref (val);
+
+        // type
+        if (ptr->d_type == DT_BLK) {
+            val = purc_variant_make_string ("b", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_CHR) {
+            val = purc_variant_make_string ("c", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_DIR) {
+            val = purc_variant_make_string ("d", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_FIFO) {
+            val = purc_variant_make_string ("f", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_LNK) {
+            val = purc_variant_make_string ("l", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_REG) {
+            val = purc_variant_make_string ("r", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_SOCK) {
+            val = purc_variant_make_string ("s", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+        else if(ptr->d_type == DT_UNKNOWN) {
+            val = purc_variant_make_string ("u", false);
+            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
+            purc_variant_unref (val);
+        }
+
+        // mode
+        val = purc_variant_make_byte_sequence (&(file_stat.st_mode),
+                                                    sizeof(unsigned long));
+        purc_variant_object_set_by_static_ckey (obj_var, "mode", val);
+        purc_variant_unref (val);
+
+        // mode_str
+        for (i = 0; i < 3; i++) {
+            if ((0x01 << (8 - 3 * i)) & file_stat.st_mode)
+                au[i * 3 + 0] = 'r';
+            else
+                au[i * 3 + 0] = '-';
+            if ((0x01 << (7 - 3 * i)) & file_stat.st_mode)
+                au[i * 3 + 1] = 'w';
+            else
+                au[i * 3 + 1] = '-';
+            if ((0x01 << (6 - 3 * i)) & file_stat.st_mode)
+                au[i * 3 + 2] = 'x';
+            else
+                au[i * 3 + 2] = '-';
+        }
+        val = purc_variant_make_string (au, false);
+        purc_variant_object_set_by_static_ckey (obj_var, "mode_str", val);
+        purc_variant_unref (val);
+
+        // nlink
+        val = purc_variant_make_number (file_stat.st_nlink);
+        purc_variant_object_set_by_static_ckey (obj_var, "nlink", val);
+        purc_variant_unref (val);
+
+        // uid
+        val = purc_variant_make_number (file_stat.st_uid);
+        purc_variant_object_set_by_static_ckey (obj_var, "uid", val);
+        purc_variant_unref (val);
+
+        // gid
+        val = purc_variant_make_number (file_stat.st_gid);
+        purc_variant_object_set_by_static_ckey (obj_var, "gid", val);
+        purc_variant_unref (val);
+
+        // rdev_major
+        val = purc_variant_make_number (major(file_stat.st_dev));
+        purc_variant_object_set_by_static_ckey (obj_var, "rdev_major", val);
+        purc_variant_unref (val);
+
+        // rdev_minor
+        val = purc_variant_make_number (minor(file_stat.st_dev));
+        purc_variant_object_set_by_static_ckey (obj_var, "rdev_minor", val);
+        purc_variant_unref (val);
+
+        // size
+        val = purc_variant_make_number (file_stat.st_size);
+        purc_variant_object_set_by_static_ckey (obj_var, "size", val);
+        purc_variant_unref (val);
+
+        // blksize
+        val = purc_variant_make_number (file_stat.st_blksize);
+        purc_variant_object_set_by_static_ckey (obj_var, "blksize", val);
+        purc_variant_unref (val);
+
+        // blocks
+        val = purc_variant_make_number (file_stat.st_blocks);
+        purc_variant_object_set_by_static_ckey (obj_var, "blocks", val);
+        purc_variant_unref (val);
+
+        // atime
+        val = purc_variant_make_string (ctime(&file_stat.st_atime), false);
+        purc_variant_object_set_by_static_ckey (obj_var, "atime", val);
+        purc_variant_unref (val);
+
+        // mtime
+        val = purc_variant_make_string (ctime(&file_stat.st_mtime), false);
+        purc_variant_object_set_by_static_ckey (obj_var, "mtime", val);
+        purc_variant_unref (val);
+
+        // ctime
+        val = purc_variant_make_string (ctime(&file_stat.st_ctime), false);
+        purc_variant_object_set_by_static_ckey (obj_var, "ctime", val);
+        purc_variant_unref (val);
+
+        purc_variant_array_append (ret_var, obj_var);
+        purc_variant_unref (obj_var);
     }
 
-    if(device[index].type != DEVICE_TYPE_WIFI)
-    {
-        ret_code = ERR_NOT_WIFI_DEVICE;
-        goto failed;
-    }
-        
-    // whether library has been loaded
-    if(device[index].lib_handle == NULL)
-    {
-        ret_code = ERR_LOAD_LIBRARY;
-        goto failed;
-    }
-
-    wifi_device = (WiFi_device *)device[index].device;
-    if(wifi_device->context == NULL)
-    {
-        ret_code = ERR_DEVICE_NOT_OPENNED;
-        goto failed;
-    }
-
-    if((device[index].status == DEVICE_STATUS_DOWN) || (device[index].status == DEVICE_STATUS_UNCERTAIN))
-    {
-        ret_code = ERR_OPEN_WIFI_DEVICE;
-        if(ifconfig_helper(device_name, 1))
-            goto failed;
-    }
-
-    ret_code = wifi_device->wifi_device_Ops->start_scan(wifi_device->context);
-
-    pthread_mutex_lock(&(wifi_device->list_mutex));
-    wifi_hotspot * node = wifi_device->first_hotspot;
-    while(node)
-    {
-        if(node != wifi_device->first_hotspot)
-            sprintf(ret_string + strlen(ret_string), ",");
-        sprintf(ret_string + strlen(ret_string), 
-                "{"
-                "\"bssid\":\"%s\","
-                "\"ssid\":\"%s\","
-                "\"frequency\":\"%s\","
-                "\"capabilities\":\"%s\","
-                "\"signalStrength\":%d,"
-                "\"isConnected\":%s"
-                "}",
-                node->bssid, node->ssid, node->frenquency, node->capabilities, node->signal_strength, node->isConnect ? "true": "false");
-
-        node = node->next;
-    }
-    pthread_mutex_unlock(&(wifi_device->list_mutex));
-
-failed:
-    if(jo)
-        json_object_put (jo);
-
-    sprintf(ret_string + strlen(ret_string), "],\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
-*/
+    closedir(dir);
 
 failed:
     if(jo)
@@ -193,6 +327,15 @@ failed:
     sprintf(ret_string + strlen(ret_string), "],\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
+
+    while(wildcard)
+	{
+        if(wildcard->wildcard)
+            free(wildcard->wildcard);
+        temp_wildcard = wildcard;
+        wildcard = wildcard->next;
+        free (temp_wildcard);
+    }
 
     return ret_string;
 

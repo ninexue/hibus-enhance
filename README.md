@@ -19,26 +19,42 @@
 ```
 - 返回值：
    + `data`：返回的数据：
-     + `device`：网络设备名；
-     + `type`：网络设备类型；
-     + `status`：网络设备状态；
-     + `mac`：网络设备MAC地址；
-     + `ip`：网络设备IP地址；
-     + `broadcast`：网络设备广播地址；
-     + `subnetmask`：网络设备子网掩码；
+     + `name`：文件名；
+     + `dev`：包含文件的设备ID；
+     + `inode`：节点号；
+     + `type`：文件类型；
+     + `mode`：文件模式；
+     + `link`：硬链接数量；
+     + `uid`：所有者ID；
+     + `gid`：所属组ID；
+     + `rdev`：设备ID（如是特殊文件）；
+     + `size`：文件大小；
+     + `blksize`：文件系统每块大小；
+     + `blocks`：文件所占块数量；
+     + `atime`：文件最后一次访问时间；
+     + `mtime`：文件最后一次修改时间；
+     + `ctime`：文件创建时间；
    + `errCode`：返回错误编码，见附表；
    + `errMsg`：错误信息。
 ```json
     {
-        "data":[
+        "list":[
                     {
-                        "device":"eth0",
-                        "type":"<wifi|ethernet|mobile|lo>",
-                        "status":"<down|up|link>",
-                        "mac":"AB:CD:EF:12:34:56",
-                        "ip":"192.168.1.128",
-                        "broadcast":"192.168.1.255",
-                        "subnetmask":"155.255.255.0"
+                        "name":"eth0",
+                        "dev":100,
+                        "inode":5,
+                        "type":"b",
+                        "mode":"-rw-rw-r--",
+                        "link":1,
+                        "uid":1000,
+                        "gid":1000,
+                        "rdev":100,
+                        "size":1026,
+                        "blksize":512,
+                        "blocks":3,
+                        "atime":"2022-09-02",
+                        "mtime":"2022-09-02",
+                        "ctime":"2022-09-02"
                     },
                     {
                          ......
@@ -56,7 +72,7 @@
    + `fileName`：要删除文件的全路径；
 ```json
     {
-		"uid": euid,
+		"euid": euid,
         "fileName":"full_path"
     }
 ```
@@ -77,43 +93,19 @@
    + `fileName`：要删除目录的全路径；
 ```json
     {
-		"uid": euid,
+		"euid": euid,
         "fileName":"full_path"
     }
 ```
 - 返回值：
-   + `data`：返回的数据：
-     + `device`：网络设备名；
-     + `type`：网络设备类型；
-     + `status`：网络设备状态；
-     + `mac`：网络设备MAC地址；
-     + `ip`：网络设备IP地址；
-     + `broadcast`：网络设备广播地址；
-     + `subnetmask`：网络设备子网掩码；
    + `errCode`：返回错误编码，见附表；
    + `errMsg`：错误信息。
 ```json
     {
-        "data":[
-                    {
-                        "device":"eth0",
-                        "type":"<wifi|ethernet|mobile|lo>",
-                        "status":"<down|up|link>",
-                        "mac":"AB:CD:EF:12:34:56",
-                        "ip":"192.168.1.128",
-                        "broadcast":"192.168.1.255",
-                        "subnetmask":"155.255.255.0"
-                    },
-                    {
-                         ......
-                    }
-               ],
-        "errCode": 0,
-        "errMsg": "OK"
+        "errCode":0,
+        "errMsg":"OK"
     }
 ```
-如没有查到网络设备，则`data`为空数组。
-
 
 #### 创建目录
 
@@ -122,53 +114,29 @@
    + `fileName`：要创建目录的全路径；
 ```json
     {
-		"uid": euid,
+		"euid": euid,
         "fileName":"full_path"
     }
 ```
 - 返回值：
-   + `data`：返回的数据：
-     + `bssid`：
-     + `ssid`：网络名称；
-     + `frequency`：网络频率；
-     + `signalStrength`：网络信号强度；
-     + `capabilities`：可用的加密方式；
-     + `isConnected`：当前是否连接。
    + `errCode`：返回错误编码，见附表；
    + `errMsg`：错误信息。
 ```json
     {
-        "data": [
-                    {
-                         "bssid": "f0:b4:29:24:18:eb",
-                         "ssid": "fmsoft-dev",
-                         "frequency": "2427MHZ",
-                         "signalStrength": 65,
-                         "capabilities": ["WPA-PSK-CCMP+TKIP","WPA2-PSK-CCMP+TKIP","WPS","ESS"],
-                         "isConnected":true
-                    },
-                    {
-                         ......
-                    }
-                ],
         "errCode":0,
         "errMsg":"OK"
     }
 ```
 
-如没有网络热点，则`data`为空数组。
-
-该过程将返回扫描结果。热点列表根据信号强度从大到小排列。如有当前连接网络，则改网络排在第一个。
-
-
-#### 
+#### 删除文件
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/unlink`
 - 参数：
-   + `device`：网络设备名称；
+   + `fileName`：要创建目录的全路径；
 ```json
     {
-        "device":"device_name",
+		"euid": euid,
+        "fileName":"full_path"
     }
 ```
 - 返回值：
@@ -181,39 +149,25 @@
     }
 ```
 
-busybox行者将停止后台进行的定时热点扫描操作，这将导致停止发送`WIFIHOTSPOTSCHANGED`和`NETWORKDEVICECHANGED`泡泡。
-
-
-#### 连接网络热点
+#### 修改文件属性
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/touch`
-- 参数：
-   + `device`：网络设备名称；
-   + `ssid`：网络名称；
-   + `password`：网络密码；
-   + `autoConnect`：网络中断后是否自动连接；
-   + `default`：是否设置为默认网络，下次开机时自动连接。
+   + `fileName`：要创建目录的全路径；
 ```json
     {
-        "device":"device_name",
-        "ssid":"fmsoft-dev",
-        "password":"hybridos-hibus",
-        "autoConnect":true,
-        "default":true
+		"euid": euid,
+        "fileName":"full_path"
     }
 ```
 - 返回值：
    + `errCode`：返回错误编码，见附表；
    + `errMsg`：错误信息。
 ```json
-    { 
+    {
         "errCode":0,
         "errMsg":"OK"
     }
 ```
-
-在当前版本中，没有实现`autoConnect`、`default`对应的功能。
-
 
 ### 错误代码表
 
