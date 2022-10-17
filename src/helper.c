@@ -19,6 +19,8 @@ const char *op_errors[] = {
     "can not connect to Hibus server.",         // CONNECT_HIBUS
     "wrong procedure name.",                    // WRONG_PROCEDURE
     "wrong Json format.",                       // WRONG_JSON
+	"File or directory does not exist.",		// FILE_EXIST
+	"Can not open directory.",					// DIR_OPEN
 };
 
 uid_t get_usr_id(const char *name)

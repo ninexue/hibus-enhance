@@ -2,19 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include <fcntl.h>
-#include <dlfcn.h>
-#include <net/if.h>
-#include <sys/timerfd.h>
-#include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/ioctl.h>
-#include <linux/wireless.h>
-#include <arpa/inet.h>
 #include <errno.h>
+#include <dirent.h>
 
 #include <hibus.h>
 #include <hibox/json.h>
@@ -38,6 +29,150 @@ static struct busybox_procedure fs_procedure[] =
 
 static struct busybox_event fs_event [] = {};
 
+static bool wildcard_cmp(const char *str, const char *pattern)
+{
+    int len1 = 0;
+    int len2 = 0;
+    int mark = 0;
+    int p1 = 0;
+    int p2 = 0;
+
+    if(str == NULL)
+        return false;
+
+    if(pattern == NULL)
+        return false;
+
+    len1 = strlen (str);
+    len2 = strlen (pattern);
+
+    while((p1 < len1) && (p2 < len2))
+	{
+        if(pattern[p2] == '?')
+		{
+            p1++;
+            p2++;
+            continue;
+        }
+
+        if(pattern[p2] == '*')
+		{
+            p2++;
+            mark = p2;
+            continue;
+        }
+
+        if(str[p1] != pattern[p2])
+		{
+            if (p1 == 0 && p2 == 0)
+                return false;
+
+            p1 -= p2 - mark - 1;
+            p2 = mark;
+            continue;
+        }
+        p1++;
+        p2++;
+    }
+
+    if(p2 == len2)
+	{
+        if (p1 == len1)
+            return true;
+
+        if (pattern[p2 - 1] == '*')
+            return true;
+    }
+
+    while(p2 < len2)
+	{
+        if (pattern[p2] != '*')
+            return false;
+
+        p2++;
+    }
+
+    return true;
+}
+
+static void
+make_file_object(char *filename, struct stat *file_stat, char *ret_string)
+{
+	int i = 0;
+
+	sprintf(ret_string + strlen(ret_string),
+                "{"
+				"\"name\":\"%s\","
+				"\"dev\":%ld,"
+				"\"node\":%ld,"
+				"\"type\":\"",
+				filename, file_stat->st_dev, file_stat->st_ino);
+
+	switch(file_stat->st_mode & S_IFMT)
+	{
+		case S_IFREG:
+			strcat(ret_string, "-\",");
+			break;
+		case S_IFCHR:
+			strcat(ret_string, "c\",");
+			break;
+		case S_IFBLK:
+			strcat(ret_string, "b\",");
+			break;
+		case S_IFDIR:
+			strcat(ret_string, "d\",");
+			break;
+		case S_IFIFO:
+			strcat(ret_string, "p\",");
+			break;
+		case S_IFLNK:
+			strcat(ret_string, "l\",");
+			break;
+		case S_IFSOCK:
+			strcat(ret_string, "s\",");
+			break;
+	}
+
+	strcat(ret_string, "\"mode\":\"");
+	for(i = 8; i >= 0; i--)
+	{
+		if((file_stat->st_mode >> i) & 1)
+		{
+			switch(i % 3)
+			{
+				case 2:
+					strcat(ret_string, "r");
+					break;
+				case 1:
+					strcat(ret_string, "w");
+					break;
+				case 0:
+					strcat(ret_string, "x");
+					break;
+			}
+		}
+		else
+			strcat(ret_string, "-");
+	}
+	strcat(ret_string, "\",");
+
+	sprintf(ret_string + strlen(ret_string),
+				"\"link\":%lu,"
+				"\"uid\":%u,"
+				"\"gid\":%u,"
+				"\"rdev\":%lu,"
+				"\"size\":%ld,"
+				"\"blksize\":%ld,"
+				"\"blocks\":%ld,"
+				"\"atime\":\"%s\","
+				"\"mtime\":\"%s\","
+				"\"ctime\":\"%s\""
+				"}",
+				file_stat->st_nlink, file_stat->st_uid, file_stat->st_gid,
+				file_stat->st_rdev, file_stat->st_size, file_stat->st_blksize,
+				file_stat->st_blocks, ctime(&(file_stat->st_atime)),
+				ctime(&(file_stat->st_mtime)), ctime(&(file_stat->st_ctime)));
+}
 
 char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 				const char* to_method, const char* method_param, int *err_code)
@@ -47,6 +182,13 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+	const char *full_path = NULL;
+    char dirname[PATH_MAX] = {0, };
+    char filename[PATH_MAX] = {0, };
+    char wildcard[PATH_MAX] = {0, };
+	struct stat file_stat;
+	char *tempchr = NULL;
+	size_t length = 0;
 
     sprintf(ret_string, "{\"list\":[");
 
@@ -74,268 +216,160 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
 
-	// get file name
-    char dir_name[PATH_MAX];
-    char filename[PATH_MAX];
-    const char *string_filename = NULL;
-    const char *filter = NULL;
-    struct wildcard_list *wildcard = NULL;
-    struct wildcard_list *temp_wildcard = NULL;
-    char au[10] = {0};
-    int i = 0;
-
-    if ((argv == NULL) || (nr_args < 1)) {
-        purc_set_error (PURC_ERROR_INVALID_VALUE);
-        return PURC_VARIANT_INVALID;
-    }
-
-    if (!purc_variant_is_string (argv[0])) {
-        purc_set_error (PURC_ERROR_WRONG_DATA_TYPE);
-        return PURC_VARIANT_INVALID;
-    }
-
-    // get the file name
-    string_filename = purc_variant_get_string_const (argv[0]);
-    strcpy (dir_name, string_filename);
-
-    if (access(dir_name, F_OK | R_OK) != 0) {
-        purc_set_error (PURC_ERROR_BAD_SYSTEM_CALL);
-        return PURC_VARIANT_INVALID;
-    }
-
-    // get the filter
-    if ((nr_args > 1) && (argv[1] == NULL ||
-            (!purc_variant_is_string (argv[1])))) {
-        purc_set_error (PURC_ERROR_WRONG_DATA_TYPE);
-        return PURC_VARIANT_INVALID;
-    }
-    if ((nr_args > 1) && (argv[1] != NULL))
-        filter = purc_variant_get_string_const (argv[1]);
-
-    // get filter array
-    if (filter) {
-        size_t length = 0;
-        const char *head = pcdvobjs_get_next_option (filter, ";", &length);
-        while (head) {
-            if (wildcard == NULL) {
-                wildcard = malloc (sizeof(struct wildcard_list));
-                if (wildcard == NULL)
-                    goto error;
-                temp_wildcard = wildcard;
-            }
-            else {
-                temp_wildcard->next = malloc (sizeof(struct wildcard_list));
-                if (temp_wildcard->next == NULL)
-                    goto error;
-                temp_wildcard = temp_wildcard->next;
-            }
-            temp_wildcard->next = NULL;
-            temp_wildcard->wildcard = malloc (length + 1);
-            if (temp_wildcard->wildcard == NULL)
-                goto error;
-            strncpy(temp_wildcard->wildcard, head, length);
-            *(temp_wildcard->wildcard + length) = 0x00;
-            pcdvobjs_remove_space (temp_wildcard->wildcard);
-            head = pcdvobjs_get_next_option (head + length + 1, ";", &length);
-        }
-    }
-
-    // get the dirctory content
-    DIR *dir = NULL;
-    struct dirent *ptr = NULL;
-    purc_variant_t obj_var = PURC_VARIANT_INVALID;
-    struct stat file_stat;
-
-    if ((dir = opendir (dir_name)) == NULL) {
-        purc_set_error (PURC_ERROR_BAD_SYSTEM_CALL);
-        goto error;
-    }
-
-    ret_var = purc_variant_make_array (0, PURC_VARIANT_INVALID);
-    while ((ptr = readdir(dir)) != NULL)
+	// get file name and wildcard
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
     {
-        if (strcmp (ptr->d_name,".") == 0 || strcmp(ptr->d_name, "..") == 0)
-            continue;
-
-        // use filter
-        temp_wildcard = wildcard;
-        while (temp_wildcard) {
-            if (wildcard_cmp (ptr->d_name, temp_wildcard->wildcard))
-                break;
-            temp_wildcard = temp_wildcard->next;
-        }
-        if (wildcard && (temp_wildcard == NULL))
-            continue;
-
-        obj_var = purc_variant_make_object (0, PURC_VARIANT_INVALID,
-                PURC_VARIANT_INVALID);
-
-        strcpy (filename, dir_name);
-        strcat (filename, "/");
-        strcat (filename, ptr->d_name);
-
-        if (stat(filename, &file_stat) < 0)
-            continue;
-
-        // name
-        val = purc_variant_make_string (ptr->d_name, false);
-        purc_variant_object_set_by_static_ckey (obj_var, "name", val);
-        purc_variant_unref (val);
-
-        // dev
-        val = purc_variant_make_number (file_stat.st_dev);
-        purc_variant_object_set_by_static_ckey (obj_var, "dev", val);
-        purc_variant_unref (val);
-
-        // inode
-        val = purc_variant_make_number (ptr->d_ino);
-        purc_variant_object_set_by_static_ckey (obj_var, "inode", val);
-        purc_variant_unref (val);
-
-        // type
-        if (ptr->d_type == DT_BLK) {
-            val = purc_variant_make_string ("b", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_CHR) {
-            val = purc_variant_make_string ("c", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_DIR) {
-            val = purc_variant_make_string ("d", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_FIFO) {
-            val = purc_variant_make_string ("f", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_LNK) {
-            val = purc_variant_make_string ("l", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_REG) {
-            val = purc_variant_make_string ("r", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_SOCK) {
-            val = purc_variant_make_string ("s", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-        else if(ptr->d_type == DT_UNKNOWN) {
-            val = purc_variant_make_string ("u", false);
-            purc_variant_object_set_by_static_ckey (obj_var, "type", val);
-            purc_variant_unref (val);
-        }
-
-        // mode
-        val = purc_variant_make_byte_sequence (&(file_stat.st_mode),
-                                                    sizeof(unsigned long));
-        purc_variant_object_set_by_static_ckey (obj_var, "mode", val);
-        purc_variant_unref (val);
-
-        // mode_str
-        for (i = 0; i < 3; i++) {
-            if ((0x01 << (8 - 3 * i)) & file_stat.st_mode)
-                au[i * 3 + 0] = 'r';
-            else
-                au[i * 3 + 0] = '-';
-            if ((0x01 << (7 - 3 * i)) & file_stat.st_mode)
-                au[i * 3 + 1] = 'w';
-            else
-                au[i * 3 + 1] = '-';
-            if ((0x01 << (6 - 3 * i)) & file_stat.st_mode)
-                au[i * 3 + 2] = 'x';
-            else
-                au[i * 3 + 2] = '-';
-        }
-        val = purc_variant_make_string (au, false);
-        purc_variant_object_set_by_static_ckey (obj_var, "mode_str", val);
-        purc_variant_unref (val);
-
-        // nlink
-        val = purc_variant_make_number (file_stat.st_nlink);
-        purc_variant_object_set_by_static_ckey (obj_var, "nlink", val);
-        purc_variant_unref (val);
-
-        // uid
-        val = purc_variant_make_number (file_stat.st_uid);
-        purc_variant_object_set_by_static_ckey (obj_var, "uid", val);
-        purc_variant_unref (val);
-
-        // gid
-        val = purc_variant_make_number (file_stat.st_gid);
-        purc_variant_object_set_by_static_ckey (obj_var, "gid", val);
-        purc_variant_unref (val);
-
-        // rdev_major
-        val = purc_variant_make_number (major(file_stat.st_dev));
-        purc_variant_object_set_by_static_ckey (obj_var, "rdev_major", val);
-        purc_variant_unref (val);
-
-        // rdev_minor
-        val = purc_variant_make_number (minor(file_stat.st_dev));
-        purc_variant_object_set_by_static_ckey (obj_var, "rdev_minor", val);
-        purc_variant_unref (val);
-
-        // size
-        val = purc_variant_make_number (file_stat.st_size);
-        purc_variant_object_set_by_static_ckey (obj_var, "size", val);
-        purc_variant_unref (val);
-
-        // blksize
-        val = purc_variant_make_number (file_stat.st_blksize);
-        purc_variant_object_set_by_static_ckey (obj_var, "blksize", val);
-        purc_variant_unref (val);
-
-        // blocks
-        val = purc_variant_make_number (file_stat.st_blocks);
-        purc_variant_object_set_by_static_ckey (obj_var, "blocks", val);
-        purc_variant_unref (val);
-
-        // atime
-        val = purc_variant_make_string (ctime(&file_stat.st_atime), false);
-        purc_variant_object_set_by_static_ckey (obj_var, "atime", val);
-        purc_variant_unref (val);
-
-        // mtime
-        val = purc_variant_make_string (ctime(&file_stat.st_mtime), false);
-        purc_variant_object_set_by_static_ckey (obj_var, "mtime", val);
-        purc_variant_unref (val);
-
-        // ctime
-        val = purc_variant_make_string (ctime(&file_stat.st_ctime), false);
-        purc_variant_object_set_by_static_ckey (obj_var, "ctime", val);
-        purc_variant_unref (val);
-
-        purc_variant_array_append (ret_var, obj_var);
-        purc_variant_unref (obj_var);
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	full_path = json_object_get_string(jo_tmp);
+    if(full_path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
     }
 
-    closedir(dir);
+//	if(full_path[0] != '/')
+//		add work directory
+
+	tempchr = strrchr(full_path, '/');
+	if(tempchr == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+	}
+	else
+	{
+		length = strlen(full_path);
+		if(length == (size_t)(tempchr - full_path + 1))
+		{
+			strcpy(dirname, full_path);
+			if(full_path == tempchr)
+				dirname[length] = 0;
+			else
+				dirname[length - 1] = 0;
+
+			if(stat(dirname, &file_stat) < 0)
+			{
+   				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		        goto failed;
+			}
+
+			if(!S_ISDIR(file_stat.st_mode))
+			{
+   				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		        goto failed;
+			}
+		}
+		else
+		{
+			if(full_path == tempchr)
+			{
+				dirname[0] = '/';
+				dirname[1] = 0;
+			}
+			else
+			{
+				strncpy(dirname, full_path, tempchr - full_path);
+				dirname[tempchr - full_path] = 0;
+			}
+			strcpy(filename, tempchr + 1);
+
+			if(strchr(filename, '*') || strchr(filename, '?'))
+			{
+				strcpy(wildcard, filename);
+				filename[0] = 0;
+			}
+			else
+			{
+				if(filename[0])
+				{
+					if(stat(full_path, &file_stat) < 0)
+					{
+        				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+				        goto failed;
+					}
+
+					if(S_ISDIR(file_stat.st_mode))
+					{
+						if(full_path != tempchr)
+							strcat(dirname, "/");
+						strcat(dirname, filename);
+						filename[0] = 0;
+					}
+				}
+				else
+				{
+					if(stat(dirname, &file_stat) < 0)
+					{
+        				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+				        goto failed;
+					}
+
+					if(!S_ISDIR(file_stat.st_mode))
+					{
+        				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+				        goto failed;
+					}
+				}
+			}
+		}
+	}
+
+
+	if(filename[0] == 0)
+	{
+		DIR *dir = NULL;
+		struct dirent *ptr = NULL;
+		bool first = true;
+
+		if((dir = opendir(dirname)) == NULL)
+		{
+        	ret_code = ERROR_BUSYBOX_DIR_OPEN;
+        	goto failed;
+    	}
+
+    	while((ptr = readdir(dir)) != NULL)
+		{
+        	if(strcmp(ptr->d_name,".") == 0 || strcmp(ptr->d_name, "..") == 0)
+            	continue;
+
+			// use wildcard
+			if(wildcard[0])
+			{
+            	if(!wildcard_cmp(ptr->d_name, wildcard))
+					continue;
+			}
+
+        	strcpy (filename, dirname);
+	 	    strcat (filename, "/");
+        	strcat (filename, ptr->d_name);
+
+	        if(stat(filename, &file_stat) < 0)
+	            continue;
+
+			if(first)
+				first = false;
+			else
+				sprintf(ret_string + strlen(ret_string), ",");
+
+			make_file_object(ptr->d_name, &file_stat, ret_string);
+		}
+
+		closedir(dir);
+	}
+	else
+		make_file_object(filename, &file_stat, ret_string);
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    sprintf(ret_string + strlen(ret_string), "],\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    sprintf(ret_string + strlen(ret_string),
+			"],\"errCode\":%d, \"errMsg\":\"%s\"}",
+			ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
-
-    while(wildcard)
-	{
-        if(wildcard->wildcard)
-            free(wildcard->wildcard);
-        temp_wildcard = wildcard;
-        wildcard = wildcard->next;
-        free (temp_wildcard);
-    }
 
     return ret_string;
 
