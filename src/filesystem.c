@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <dirent.h>
+#include <fcntl.h>
 
 #include <hibus.h>
 #include <hibox/json.h>
@@ -24,10 +25,163 @@ static struct busybox_procedure fs_procedure[] =
 	{METHOD_HIBUS_BUSYBOX_RMDIR, 	removeDirectory},
 	{METHOD_HIBUS_BUSYBOX_MKDIR, 	makeDirectory},
 	{METHOD_HIBUS_BUSYBOX_UNLINK, 	unlinkFile},
-	{METHOD_HIBUS_BUSYBOX_TOUCH, 	touchFile}
+	{METHOD_HIBUS_BUSYBOX_TOUCH, 	touchFile},
+	{METHOD_HIBUS_BUSYBOX_CHDIR, 	changeDirectory}
 };
 
 static struct busybox_event fs_event [] = {};
+
+static int get_error_code(void)
+{
+	int ret = ERROR_BUSYBOX_OK;
+	switch(errno)
+	{
+		case EACCES:
+			ret = ERROR_BUSYBOX_EACCES;
+			break;
+		case EBUSY:
+			ret = ERROR_BUSYBOX_EBUSY;
+			break;
+		case EFAULT:
+			ret = ERROR_BUSYBOX_EFAULT;
+			break;
+		case EIO:
+			ret = ERROR_BUSYBOX_EIO;
+			break;
+		case EISDIR:
+			ret = ERROR_BUSYBOX_EISDIR;
+			break;
+		case ELOOP:
+			ret = ERROR_BUSYBOX_ELOOP;
+			break;
+		case ENAMETOOLONG:
+			ret = ERROR_BUSYBOX_ENAMETOOLONG;
+			break;
+		case ENOENT:
+			ret = ERROR_BUSYBOX_ENOENT;
+			break;
+		case ENOMEM:
+			ret = ERROR_BUSYBOX_ENOMEM;
+			break;
+		case ENOTDIR:
+			ret = ERROR_BUSYBOX_ENOTDIR;
+			break;
+		case EPERM:
+			ret = ERROR_BUSYBOX_EPERM;
+			break;
+		case EROFS:
+			ret = ERROR_BUSYBOX_EROFS;
+			break;
+		case EBADF:
+			ret = ERROR_BUSYBOX_EBADF;
+			break;
+		case EINVAL:
+			ret = ERROR_BUSYBOX_EINVAL;
+			break;
+		case ESRCH:
+			ret = ERROR_BUSYBOX_ESRCH;
+			break;
+		default:
+			ret = ERROR_BUSYBOX_UNKONOWN;
+			break;
+	}
+
+	return ret;
+}
+
+char * changeDirectory(hibus_conn* conn, const char* from_endpoint,
+				const char* to_method, const char* method_param, int *err_code)
+{
+    char * ret_string = malloc(128);
+    int ret_code = ERROR_BUSYBOX_OK;
+    hibus_json *jo = NULL;
+    hibus_json *jo_tmp = NULL;
+	uid_t euid;
+	const char *path = NULL;
+    char dirname[PATH_MAX] = {0, };
+	struct stat dict_stat;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
+
+    // get procedure name
+    if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_CHDIR,
+								strlen(METHOD_HIBUS_BUSYBOX_LS)))
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
+        goto failed;
+    }
+
+    // analyze json
+    jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
+    if(jo == NULL)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+
+    // get euid
+    if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+
+   	euid = json_object_get_int(jo_tmp);
+	change_euid(from_endpoint, euid);
+
+	// get working directory
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+    }
+
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] == '/')
+		{
+			strcat(dirname, user->cwd);
+			strcat(dirname, "/");
+			strcat(dirname, path);
+		}
+		else
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+	}
+	else
+		strcpy(dirname, path);
+
+	if(stat(dirname, &dict_stat) < 0)
+	{
+   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		goto failed;
+	}
+
+	if(!S_ISDIR(dict_stat.st_mode))
+	{
+   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		goto failed;
+	}
+
+	strcpy(user->cwd, dirname);
+
+failed:
+    if(jo)
+        json_object_put (jo);
+
+    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+
+	restore_euid();
+
+    return ret_string;
+}
 
 static bool wildcard_cmp(const char *str, const char *pattern)
 {
@@ -96,7 +250,7 @@ static bool wildcard_cmp(const char *str, const char *pattern)
 }
 
 static void
-make_file_object(char *filename, struct stat *file_stat, char *ret_string)
+make_file_list(char *filename, struct stat *file_stat, char *ret_string)
 {
 	int i = 0;
 
@@ -182,13 +336,15 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
-	const char *full_path = NULL;
+	const char *path = NULL;
+    char full_path[PATH_MAX] = {0, };
     char dirname[PATH_MAX] = {0, };
     char filename[PATH_MAX] = {0, };
     char wildcard[PATH_MAX] = {0, };
 	struct stat file_stat;
 	char *tempchr = NULL;
 	size_t length = 0;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     sprintf(ret_string, "{\"list\":[");
 
@@ -222,15 +378,29 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
         goto failed;
     }
-   	full_path = json_object_get_string(jo_tmp);
-    if(full_path == NULL)
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
 	{
         ret_code = ERROR_BUSYBOX_INVALID_PARAM;
         goto failed;
     }
 
-//	if(full_path[0] != '/')
-//		add work directory
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] != '/')
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+		else
+		{
+			strcpy(full_path, user->cwd);
+			strcat(full_path, "/");
+			strcat(full_path, path);
+		}
+	}
+	else
+		strcpy(full_path, path);
 
 	tempchr = strrchr(full_path, '/');
 	if(tempchr == NULL)
@@ -353,13 +523,13 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 			else
 				sprintf(ret_string + strlen(ret_string), ",");
 
-			make_file_object(ptr->d_name, &file_stat, ret_string);
+			make_file_list(ptr->d_name, &file_stat, ret_string);
 		}
 
 		closedir(dir);
 	}
 	else
-		make_file_object(filename, &file_stat, ret_string);
+		make_file_list(filename, &file_stat, ret_string);
 
 failed:
     if(jo)
@@ -380,9 +550,13 @@ char * removeFile(hibus_conn* conn, const char* from_endpoint,
 {
     char * ret_string = malloc(128);
     int ret_code = ERROR_BUSYBOX_OK;
+	const char *path = NULL;
+    char full_path[PATH_MAX] = {0, };
+	struct stat file_stat;
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_RM,
@@ -400,7 +574,7 @@ char * removeFile(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // get device name
+    // get euid
     if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
     {
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
@@ -410,12 +584,55 @@ char * removeFile(hibus_conn* conn, const char* from_endpoint,
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
 
+	// get file path
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+    }
+
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] != '/')
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+		else
+		{
+			strcpy(full_path, user->cwd);
+			strcat(full_path, "/");
+			strcat(full_path, path);
+		}
+	}
+	else
+		strcpy(full_path, path);
+
+	if(stat(full_path, &file_stat) < 0)
+	{
+   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		goto failed;
+	}
+
+	if(S_ISDIR(file_stat.st_mode))
+	{
+   		ret_code = ERROR_BUSYBOX_NOT_FILE;
+		goto failed;
+	}
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    sprintf(ret_string,
+			"{\"errCode\":%d, \"errMsg\":\"%s\"}",
+			ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
 
@@ -427,9 +644,13 @@ char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
 {
     char * ret_string = malloc(128);
     int ret_code = ERROR_BUSYBOX_OK;
+	struct stat file_stat;
+	const char *path = NULL;
+    char full_path[PATH_MAX] = {0, };
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_RMDIR,
@@ -447,7 +668,7 @@ char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // get device name
+    // get euid
     if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
     {
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
@@ -457,13 +678,55 @@ char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
 
+	// get file path
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+    }
 
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] != '/')
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+		else
+		{
+			strcpy(full_path, user->cwd);
+			strcat(full_path, "/");
+			strcat(full_path, path);
+		}
+	}
+	else
+		strcpy(full_path, path);
+
+	if(stat(full_path, &file_stat) < 0)
+	{
+   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		goto failed;
+	}
+
+	if(!S_ISDIR(file_stat.st_mode))
+	{
+   		ret_code = ERROR_BUSYBOX_NOT_DIRECTORY;
+		goto failed;
+	}
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    sprintf(ret_string,
+			"{\"errCode\":%d, \"errMsg\":\"%s\"}",
+			ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
 
@@ -475,9 +738,13 @@ char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
 {
     char * ret_string = malloc(128);
     int ret_code = ERROR_BUSYBOX_OK;
+	const char *path = NULL;
+    char full_path[PATH_MAX] = {0, };
+	struct stat file_stat;
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_MKDIR,
@@ -495,7 +762,7 @@ char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // get device name
+    // get euid
     if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
     {
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
@@ -505,12 +772,50 @@ char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
 
+	// get file path
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+    }
+
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] != '/')
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+		else
+		{
+			strcpy(full_path, user->cwd);
+			strcat(full_path, "/");
+			strcat(full_path, path);
+		}
+	}
+	else
+		strcpy(full_path, path);
+
+	if(stat(full_path, &file_stat) == 0)
+	{
+   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		goto failed;
+	}
+
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    sprintf(ret_string,
+			"{\"errCode\":%d, \"errMsg\":\"%s\"}",
+			ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
 
@@ -522,9 +827,13 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
 {
     char * ret_string = malloc(128);
     int ret_code = ERROR_BUSYBOX_OK;
+	const char *path = NULL;
+    char full_path[PATH_MAX] = {0, };
+	struct stat file_stat;
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_UNLINK,
@@ -542,7 +851,7 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // get device name
+    // get euid
     if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
     {
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
@@ -552,13 +861,60 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
 
+	// get file path
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+    }
 
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] != '/')
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+		else
+		{
+			strcpy(full_path, user->cwd);
+			strcat(full_path, "/");
+			strcat(full_path, path);
+		}
+	}
+	else
+		strcpy(full_path, path);
+
+	if(stat(full_path, &file_stat) < 0)
+	{
+   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+		goto failed;
+	}
+
+	if(S_ISREG(file_stat.st_mode))
+	{
+		if(unlink(full_path) != 0)
+			ret_code = get_error_code();
+	}
+	else
+	{
+   		ret_code = ERROR_BUSYBOX_NOT_FILE;
+		goto failed;
+	}
 
 failed:
     if(jo)
         json_object_put (jo);
 
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    sprintf(ret_string,
+			"{\"errCode\":%d, \"errMsg\":\"%s\"}",
+			ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
 
@@ -571,9 +927,13 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
 {
     char * ret_string = malloc(128);
     int ret_code = ERROR_BUSYBOX_OK;
+	const char *path = NULL;
+    char full_path[PATH_MAX] = {0, };
+	struct stat file_stat;
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_TOUCH,
@@ -591,7 +951,7 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
         goto failed;
     }
 
-    // get device name
+    // get euid
     if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
     {
         ret_code = ERROR_BUSYBOX_WRONG_JSON;
@@ -601,11 +961,74 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
 
+	// get file path
+    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
+    {
+        ret_code = ERROR_BUSYBOX_WRONG_JSON;
+        goto failed;
+    }
+   	path = json_object_get_string(jo_tmp);
+    if(path == NULL)
+	{
+        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
+        goto failed;
+    }
+
+	if(path[0] != '/')
+	{
+		if(user->cwd[0] != '/')
+		{
+        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	goto failed;
+		}
+		else
+		{
+			strcpy(full_path, user->cwd);
+			strcat(full_path, "/");
+			strcat(full_path, path);
+		}
+	}
+	else
+		strcpy(full_path, path);
+
+	if(stat(full_path, &file_stat) == 0)
+	{
+		if(S_ISDIR(file_stat.st_mode))
+		{
+   			ret_code = ERROR_BUSYBOX_NOT_FILE;
+			goto failed;
+		}
+	}
+
+	// file not exist, create it
+    if(access(full_path, F_OK | R_OK) != 0)
+	{
+        int fd = -1;
+        fd = open(full_path, O_CREAT | O_WRONLY,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH |S_IWOTH);
+
+        if(fd != -1)
+            close (fd);
+        else
+            ret_code = ERROR_BUSYBOX_CREATE_FILE;
+    }
+    else
+	{
+		// change time
+        struct timespec newtime[2];
+        newtime[0].tv_nsec = UTIME_NOW;
+        newtime[1].tv_nsec = UTIME_NOW;
+        if(utimensat(AT_FDCWD, full_path, newtime, 0))
+            ret_code = get_error_code();
+    }
+
 failed:
     if(jo)
         json_object_put (jo);
 
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
+    sprintf(ret_string,
+			"{\"errCode\":%d, \"errMsg\":\"%s\"}",
+			ret_code, op_errors[-1 * ret_code]);
 
 	restore_euid();
 

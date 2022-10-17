@@ -6,15 +6,36 @@
 
 ### busybox行者提供的远程过程
 
+#### 设置工作目录
+
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/chdir`
+- 参数：
+   + `dictName`：要设置的工作目录的全路径；
+```json
+    {
+		"euid": euid,
+        "dictName":"full_path"
+    }
+```
+- 返回值：
+   + `errCode`：返回错误编码，见附表；
+   + `errMsg`：错误信息。
+```json
+    {
+        "errCode":0,
+        "errMsg":"OK"
+    }
+```
+
 #### 显示指定目录下的文件
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/ls`
 - 参数：
-   + `path`：指定的目录；
+   + `path`：指定的目录，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
-        "path":"full_path",
+        "path":"path",
     }
 ```
 - 返回值：
@@ -69,11 +90,11 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rm`
 - 参数：
-   + `fileName`：要删除文件的全路径；
+   + `fileName`：要删除文件的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
-        "fileName":"full_path"
+        "fileName":"path"
     }
 ```
 - 返回值：
@@ -90,11 +111,11 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rmdir`
 - 参数：
-   + `fileName`：要删除目录的全路径；
+   + `fileName`：要删除目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
-        "fileName":"full_path"
+        "fileName":"path"
     }
 ```
 - 返回值：
@@ -111,11 +132,11 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/mkdir`
 - 参数：
-   + `fileName`：要创建目录的全路径；
+   + `fileName`：要创建目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
-        "fileName":"full_path"
+        "fileName":"path"
     }
 ```
 - 返回值：
@@ -132,11 +153,11 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/unlink`
 - 参数：
-   + `fileName`：要创建目录的全路径；
+   + `fileName`：要删除文件的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
-        "fileName":"full_path"
+        "fileName":"path"
     }
 ```
 - 返回值：
@@ -152,11 +173,11 @@
 #### 修改文件属性
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/touch`
-   + `fileName`：要创建目录的全路径；
+   + `fileName`：要修改属性的文件路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
-        "fileName":"full_path"
+        "fileName":"path"
     }
 ```
 - 返回值：

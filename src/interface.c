@@ -47,6 +47,7 @@ int init_runner(hibus_conn **conn, void *data)
 
 	hiuser->fd = fd_hibus_busybox;
 	hiuser->data = data;
+	hiuser->cwd[0] = 0;
 
 	hibus_conn_set_user_data(hiuser->context, hiuser);
 

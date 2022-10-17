@@ -13,14 +13,17 @@
 #include "helper.h"
 
 const char *op_errors[] = {
-    "success.",                                 // OK
-    "invalid parameter.",             			// INVALID_PARAM
-    "insufficient memory.",    					// INSUFFICIENT_MEM
-    "can not connect to Hibus server.",         // CONNECT_HIBUS
-    "wrong procedure name.",                    // WRONG_PROCEDURE
-    "wrong Json format.",                       // WRONG_JSON
-	"File or directory does not exist.",		// FILE_EXIST
-	"Can not open directory.",					// DIR_OPEN
+    "Success.",                                 	// OK
+    "Invalid parameter.",             				// INVALID_PARAM
+    "Insufficient memory.",    						// INSUFFICIENT_MEM
+    "Can not connect to Hibus server.",         	// CONNECT_HIBUS
+    "Wrong procedure name.",                    	// WRONG_PROCEDURE
+    "Wrong Json format.",                       	// WRONG_JSON
+	"File or directory does not exist.",			// FILE_EXIST
+	"Can not open directory.",						// DIR_OPEN
+	"Current working directory has not benn set.",	// WORKING_DICT
+	"It is not a file.",							// NOT_FILE
+	"It is not a directory.",						// NOT_DIRECTORY
 };
 
 uid_t get_usr_id(const char *name)

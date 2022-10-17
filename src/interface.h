@@ -29,6 +29,7 @@ struct _hibus_user
 {
     int fd;
 	hibus_conn *context;
+	char cwd[PATH_MAX];
     void *data;
 };
 
