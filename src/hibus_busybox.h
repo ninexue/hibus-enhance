@@ -53,7 +53,6 @@
 #define METHOD_HIBUS_BUSYBOX_TOUCH	"touch"
 #define	METHOD_HIBUS_BUSYBOX_CHDIR	"chdir"
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
