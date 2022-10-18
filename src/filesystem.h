@@ -64,27 +64,27 @@ char * listDirectory(PROCEDURE_PARAM);
 
 
 /****************************************************************************
- * Subroutine:  removeFile
- * Function:    remove file in an indicated directory.
+ * Subroutine:  removeFileDirectory
+ * Function:    remove file or directory.
  * Input:       Hibus register procedure input
  * Output:      Hibus register procedure output
  * Description:
  * Date:        2022/07/20
  * ModifyRecord:
  * *************************************************************************/
-char * removeFile(PROCEDURE_PARAM);
+char * removeFileDirectory(PROCEDURE_PARAM);
 
 
 /****************************************************************************
- * Subroutine:  removeDirectory
- * Function:    remove directory in an indicated directory.
+ * Subroutine:  removeEmptyDirectory
+ * Function:    remove an emptry directory
  * Input:       Hibus register procedure input
  * Output:      Hibus register procedure output
  * Description:
  * Date:        2022/07/20
  * ModifyRecord:
  * *************************************************************************/
-char * removeDirectory(PROCEDURE_PARAM);
+char * removeEmptyDirectory(PROCEDURE_PARAM);
 
 
 /****************************************************************************

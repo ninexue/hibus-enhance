@@ -14,16 +14,42 @@
 
 const char *op_errors[] = {
     "Success.",                                 	// OK
+	"Permission denied.",							// EACCES
+	"Device is busy.",								// EBUSY
+	"Bad address.",									// EFAULT
+	"Input/output error.",							// EIO
+	"Is a directory.",								// EISDIR
+	"Too many levels of symbolic links.",			// ELOOP
+	"File name is too long.",						// ENAMETOOLONG
+	"No such file or directory.",					// ENOENT
+	"Insufficient kernel memory was available.",	// ENOMEM
+	"Is not a directory.",							// ENOTDIR
+	"Operation is not permitted.",					// EPERM
+	"The file is on a read-only filesystem."		// EROFS
+	"Bad file descriptor.",							// EBADF
+	"Invalid argument.",							// EINVAL
+	"No such process.",								// ESRCH
+	"No space left on device.",						// ENOSPC
+	"Directory is not empty.", 						// ENOTEMPTY
+	"Operation would block.", 						// EWOULDBLOCK
+	"Text file is busy.", 							// ETXTBSY
+	"Value is too large to be stored in data type.",// EOVERFLOW
+	"Operation is not supported.", 					// EOPNOTSUPP
+	"Device is not configured.", 					// ENXIO
+	"Operation is not supported by device.", 		// ENODEV
+	"Too many open files are in system.", 			// ENFILE
+	"Disc quota is exceeded.", 						// EDQUOT
+	"File exists.",	 								// EEXIST
+	"File is too large.", 							// EFBIG
+	"Interrupted system call.", 					// EINTR
+	"Too many open files.",							// EMFILE
     "Invalid parameter.",             				// INVALID_PARAM
     "Insufficient memory.",    						// INSUFFICIENT_MEM
     "Can not connect to Hibus server.",         	// CONNECT_HIBUS
     "Wrong procedure name.",                    	// WRONG_PROCEDURE
     "Wrong Json format.",                       	// WRONG_JSON
-	"File or directory does not exist.",			// FILE_EXIST
-	"Can not open directory.",						// DIR_OPEN
-	"Current working directory has not benn set.",	// WORKING_DICT
-	"It is not a file.",							// NOT_FILE
-	"It is not a directory.",						// NOT_DIRECTORY
+	"Current working directory has not benn set.",	// WORKING_DIRECTORY
+	"Unknow error.",								// UNKONOWN
 };
 
 uid_t get_usr_id(const char *name)

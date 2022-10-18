@@ -21,8 +21,8 @@ extern const char *op_errors[];
 static struct busybox_procedure fs_procedure[] =
 {
 	{METHOD_HIBUS_BUSYBOX_LS, 		listDirectory},
-	{METHOD_HIBUS_BUSYBOX_RM, 		removeFile},
-	{METHOD_HIBUS_BUSYBOX_RMDIR, 	removeDirectory},
+	{METHOD_HIBUS_BUSYBOX_RM, 		removeFileDirectory},
+	{METHOD_HIBUS_BUSYBOX_RMDIR, 	removeEmptyDirectory},
 	{METHOD_HIBUS_BUSYBOX_MKDIR, 	makeDirectory},
 	{METHOD_HIBUS_BUSYBOX_UNLINK, 	unlinkFile},
 	{METHOD_HIBUS_BUSYBOX_TOUCH, 	touchFile},
@@ -80,6 +80,45 @@ static int get_error_code(void)
 			break;
 		case ESRCH:
 			ret = ERROR_BUSYBOX_ESRCH;
+			break;
+		case ENOSPC:
+			ret = ERROR_BUSYBOX_ENOSPC;
+			break;
+		case EWOULDBLOCK:
+			ret = ERROR_BUSYBOX_EWOULDBLOCK;
+			break;
+		case ETXTBSY:
+			ret = ERROR_BUSYBOX_ETXTBSY;
+			break;
+		case EOVERFLOW:
+			ret = ERROR_BUSYBOX_EOVERFLOW;
+			break;
+		case EOPNOTSUPP:
+			ret = ERROR_BUSYBOX_EOPNOTSUPP;
+			break;
+		case ENXIO:
+			ret = ERROR_BUSYBOX_ENXIO;
+			break;
+		case ENODEV:
+			ret = ERROR_BUSYBOX_ENODEV;
+			break;
+		case ENFILE:
+			ret = ERROR_BUSYBOX_ENFILE;
+			break;
+		case EDQUOT:
+			ret = ERROR_BUSYBOX_EDQUOT;
+			break;
+		case EEXIST:
+			ret = ERROR_BUSYBOX_EEXIST;
+			break;
+		case EFBIG:
+			ret = ERROR_BUSYBOX_EFBIG;
+			break;
+		case EINTR:
+			ret = ERROR_BUSYBOX_EINTR;
+			break;
+		case EMFILE:
+			ret = ERROR_BUSYBOX_EMFILE;
 			break;
 		default:
 			ret = ERROR_BUSYBOX_UNKONOWN;
@@ -151,7 +190,7 @@ char * changeDirectory(hibus_conn* conn, const char* from_endpoint,
 		}
 		else
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 	}
@@ -160,13 +199,13 @@ char * changeDirectory(hibus_conn* conn, const char* from_endpoint,
 
 	if(stat(dirname, &dict_stat) < 0)
 	{
-   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   		ret_code = ERROR_BUSYBOX_ENOENT;
 		goto failed;
 	}
 
 	if(!S_ISDIR(dict_stat.st_mode))
 	{
-   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   		ret_code = ERROR_BUSYBOX_ENOTDIR;
 		goto failed;
 	}
 
@@ -389,7 +428,7 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 	{
 		if(user->cwd[0] != '/')
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 		else
@@ -421,13 +460,13 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 
 			if(stat(dirname, &file_stat) < 0)
 			{
-   				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   				ret_code = ERROR_BUSYBOX_ENOENT;
 		        goto failed;
 			}
 
 			if(!S_ISDIR(file_stat.st_mode))
 			{
-   				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   				ret_code = ERROR_BUSYBOX_ENOTDIR;
 		        goto failed;
 			}
 		}
@@ -456,7 +495,7 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 				{
 					if(stat(full_path, &file_stat) < 0)
 					{
-        				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+        				ret_code = ERROR_BUSYBOX_ENOENT;
 				        goto failed;
 					}
 
@@ -472,13 +511,13 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 				{
 					if(stat(dirname, &file_stat) < 0)
 					{
-        				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+        				ret_code = ERROR_BUSYBOX_ENOENT;
 				        goto failed;
 					}
 
 					if(!S_ISDIR(file_stat.st_mode))
 					{
-        				ret_code = ERROR_BUSYBOX_FILE_EXIST;
+        				ret_code = ERROR_BUSYBOX_ENOTDIR;
 				        goto failed;
 					}
 				}
@@ -495,7 +534,7 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 
 		if((dir = opendir(dirname)) == NULL)
 		{
-        	ret_code = ERROR_BUSYBOX_DIR_OPEN;
+			ret_code = get_error_code();
         	goto failed;
     	}
 
@@ -545,7 +584,43 @@ failed:
 
 }
 
-char * removeFile(hibus_conn* conn, const char* from_endpoint,
+static int remove_dir(char *dir)
+{
+    int ret_code = ERROR_BUSYBOX_OK;
+    char dir_name[PATH_MAX];
+    DIR *dirp = NULL;
+    struct dirent *dp = NULL;
+    struct stat dir_stat;
+
+    stat(dir, &dir_stat);
+
+    if(S_ISDIR(dir_stat.st_mode))
+	{
+        dirp = opendir(dir);
+
+        while((dp = readdir(dirp)) != NULL)
+		{
+            if ((strcmp(dp->d_name, ".") == 0) ||
+				(strcmp(dp->d_name, "..") == 0))
+                continue;
+            sprintf(dir_name, "%s/%s", dir, dp->d_name);
+            remove_dir(dir_name);
+        }
+        closedir(dirp);
+
+        if(rmdir(dir))
+			ret_code = get_error_code();
+    }
+    else
+	{
+		if(unlink(dir) != 0)
+			ret_code = get_error_code();
+	}
+
+    return ret_code;
+}
+
+char * removeFileDirectory(hibus_conn* conn, const char* from_endpoint,
 				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(128);
@@ -601,7 +676,7 @@ char * removeFile(hibus_conn* conn, const char* from_endpoint,
 	{
 		if(user->cwd[0] != '/')
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 		else
@@ -616,15 +691,11 @@ char * removeFile(hibus_conn* conn, const char* from_endpoint,
 
 	if(stat(full_path, &file_stat) < 0)
 	{
-   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   		ret_code = ERROR_BUSYBOX_ENOENT;
 		goto failed;
 	}
 
-	if(S_ISDIR(file_stat.st_mode))
-	{
-   		ret_code = ERROR_BUSYBOX_NOT_FILE;
-		goto failed;
-	}
+    ret_code = remove_dir((char *)full_path);
 
 failed:
     if(jo)
@@ -639,7 +710,7 @@ failed:
     return ret_string;
 }
 
-char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
+char * removeEmptyDirectory(hibus_conn* conn, const char* from_endpoint,
 				const char* to_method, const char* method_param, int *err_code)
 {
     char * ret_string = malloc(128);
@@ -650,6 +721,9 @@ char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
+    DIR *dirp = NULL;
+    struct dirent *dp = NULL;
+    bool empty = true;
 	hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
 
     // get procedure name
@@ -695,7 +769,7 @@ char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
 	{
 		if(user->cwd[0] != '/')
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 		else
@@ -710,14 +784,38 @@ char * removeDirectory(hibus_conn* conn, const char* from_endpoint,
 
 	if(stat(full_path, &file_stat) < 0)
 	{
-   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   		ret_code = ERROR_BUSYBOX_ENOENT;
 		goto failed;
 	}
 
 	if(!S_ISDIR(file_stat.st_mode))
 	{
-   		ret_code = ERROR_BUSYBOX_NOT_DIRECTORY;
+   		ret_code = ERROR_BUSYBOX_ENOTDIR;
 		goto failed;
+	}
+	else
+	{
+        dirp = opendir(full_path);
+
+        while((dp = readdir(dirp)) != NULL)
+		{
+            if((strcmp(dp->d_name, ".") == 0) || (strcmp(dp->d_name, "..") == 0))
+                continue;
+            else
+			{
+                empty = false;
+                break;
+            }
+        }
+        closedir(dirp);
+
+        if(empty)
+		{
+            if(rmdir(full_path))
+				ret_code = get_error_code();
+        }
+		else
+			ret_code = ERROR_BUSYBOX_ENOTEMPTY;
 	}
 
 failed:
@@ -789,7 +887,7 @@ char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
 	{
 		if(user->cwd[0] != '/')
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 		else
@@ -804,10 +902,12 @@ char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
 
 	if(stat(full_path, &file_stat) == 0)
 	{
-   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   		ret_code = ERROR_BUSYBOX_EEXIST;
 		goto failed;
 	}
 
+    if(mkdir(full_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+		ret_code = get_error_code();
 
 failed:
     if(jo)
@@ -878,7 +978,7 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
 	{
 		if(user->cwd[0] != '/')
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 		else
@@ -893,7 +993,7 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
 
 	if(stat(full_path, &file_stat) < 0)
 	{
-   		ret_code = ERROR_BUSYBOX_FILE_EXIST;
+   		ret_code = ERROR_BUSYBOX_ENOENT;
 		goto failed;
 	}
 
@@ -903,10 +1003,7 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
 			ret_code = get_error_code();
 	}
 	else
-	{
-   		ret_code = ERROR_BUSYBOX_NOT_FILE;
-		goto failed;
-	}
+   		ret_code = ERROR_BUSYBOX_EISDIR;
 
 failed:
     if(jo)
@@ -929,7 +1026,6 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
     int ret_code = ERROR_BUSYBOX_OK;
 	const char *path = NULL;
     char full_path[PATH_MAX] = {0, };
-	struct stat file_stat;
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
@@ -978,7 +1074,7 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
 	{
 		if(user->cwd[0] != '/')
 		{
-        	ret_code = ERROR_BUSYBOX_WORKING_DICT;
+        	ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
         	goto failed;
 		}
 		else
@@ -991,26 +1087,18 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
 	else
 		strcpy(full_path, path);
 
-	if(stat(full_path, &file_stat) == 0)
-	{
-		if(S_ISDIR(file_stat.st_mode))
-		{
-   			ret_code = ERROR_BUSYBOX_NOT_FILE;
-			goto failed;
-		}
-	}
-
 	// file not exist, create it
     if(access(full_path, F_OK | R_OK) != 0)
 	{
         int fd = -1;
+
         fd = open(full_path, O_CREAT | O_WRONLY,
                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH |S_IWOTH);
 
         if(fd != -1)
             close (fd);
         else
-            ret_code = ERROR_BUSYBOX_CREATE_FILE;
+			ret_code = get_error_code();
     }
     else
 	{
@@ -1080,5 +1168,4 @@ void fs_revoke(hibus_conn *context)
 	size = sizeof(fs_event) / sizeof(struct busybox_event);
 	for(i = 0; i < size; i++)
 		hibus_revoke_event(context, fs_event[i].name);
-
 }

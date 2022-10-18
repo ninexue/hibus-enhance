@@ -86,11 +86,11 @@
     }
 ```
 
-#### 删除文件
+#### 删除文件或目录
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rm`
 - 参数：
-   + `fileName`：要删除文件的路径，如果不是以`/`开头，则认为是相对路径；
+   + `fileName`：要删除文件或目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
@@ -107,11 +107,11 @@
     }
 ```
 
-#### 删除目录
+#### 删除空目录
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rmdir`
 - 参数：
-   + `fileName`：要删除目录的路径，如果不是以`/`开头，则认为是相对路径；
+   + `fileName`：要删除空目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
 		"euid": euid,
