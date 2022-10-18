@@ -103,6 +103,8 @@ int main(void)
 	hibus_conn * hibus_context = NULL;
     char *endpoint = NULL;
 	const char *call_id = NULL;
+	uid_t euid = geteuid();
+	char command[100];
 
 	fd_hibus = hibus_connect_via_unix_socket(SOCKET_PATH, APP_NAME_SUMMER,
 											RUNNER_NAME_TEST, &hibus_context);
@@ -117,38 +119,45 @@ int main(void)
 					APP_NAME_SUMMER, RUNNER_NAME_BUSYBOX);
 
 	// chdir
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_CHDIR,
-					"{\"device\":\"wlp5s0\"}", 1000, chdir_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_CHDIR, command, 1000,
+					chdir_handler, &call_id);
 	// ls
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_LS,
-					"{\"device\":\"wlp5s0\"}", 1000, ls_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_LS, command, 1000,
+					ls_handler, &call_id);
 
 	// touch
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_TOUCH,
-					"{\"device\":\"wlp5s0\"}", 1000, touch_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_TOUCH, command, 1000,
+					touch_handler, &call_id);
 
 	// unlink
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_UNLINK,
-					"{\"device\":\"wlp5s0\"}", 1000, unlink_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_UNLINK, command, 1000,
+					unlink_handler, &call_id);
 
 	// mkdir
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_MKDIR,
-					"{\"device\":\"wlp5s0\", \"ssid\":\"fmsoft_dev_7\", \"password\":\"suzhoujie123456\"}", 1000, mkdir_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_MKDIR, command, 1000,
+					mkdir_handler, &call_id);
 
 	// rm
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_RM,
-					"{\"device\":\"wlp5s0\"}", 1000, rm_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_RM, command, 1000,
+					rm_handler, &call_id);
 
 	// rmdir
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
-					METHOD_HIBUS_BUSYBOX_RMDIR,
-					"{\"device\":\"wlp5s0\"}", 1000, rmdir_handler, &call_id);
+					METHOD_HIBUS_BUSYBOX_RMDIR, command, 1000,
+					rmdir_handler, &call_id);
 
 	while(1)
     {
