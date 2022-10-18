@@ -119,12 +119,12 @@ int main(void)
 					APP_NAME_SUMMER, RUNNER_NAME_BUSYBOX);
 
 	// chdir
-	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/huangziyue/zzz\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
 					METHOD_HIBUS_BUSYBOX_CHDIR, command, 1000,
 					chdir_handler, &call_id);
 	// ls
-	sprintf(command, "{\"euid\":%u, \"path\":\"/home/hzy\"}", euid);
+	sprintf(command, "{\"euid\":%u, \"path\":\"/home/huangziyue/zzz\"}", euid);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
 					METHOD_HIBUS_BUSYBOX_LS, command, 1000,
 					ls_handler, &call_id);
