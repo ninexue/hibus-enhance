@@ -3,15 +3,15 @@
 
 #define LIB_VISIBLE __attribute__((visibility("default")))
 
-#define SOCKET_PATH				"/var/tmp/hibus.sock"
+#define SOCKET_PATH         "/var/tmp/hibus.sock"
 
 #ifdef BUILD_HIBUS_NATIVE
-	#define APP_NAME       		"cn.fmsoft.hybridos.hibus"
+    #define APP_NAME        "cn.fmsoft.hybridos.hibus"
 #else
-	#define APP_NAME			"cn.summer.hzy"
+    #define APP_NAME        "cn.summer.hzy"
 #endif
 
-#define RUNNER_NAME_BUSYBOX    	"busybox"
+#define RUNNER_NAME_BUSYBOX "busybox"
 
 struct busybox_procedure
 {
@@ -28,12 +28,12 @@ struct busybox_event
 struct _hibus_user
 {
     int fd;
-	hibus_conn *context;
-	char cwd[PATH_MAX];
+    hibus_conn *context;
+    char cwd[PATH_MAX];
     void *data;
 };
 
-typedef struct _hibus_user	hibus_user;
+typedef struct _hibus_user  hibus_user;
 
 #ifdef __cplusplus
 extern "C" {
