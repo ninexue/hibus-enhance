@@ -1,4 +1,44 @@
-# Hibus busybox 协议
+# Hibus busybox 说明
+
+## 编译方法
+
+- 编译hibox
+    ```bash
+    # git clone https://github.com/FMSoftCN/hibox
+    # cd hibox
+    # mkdir build
+    # cd build
+    # cmake ../
+    # make
+    # sudo make install
+    ```
+- 编译hibus
+    ```bash
+    # git clone https://github.com/FMSoftCN/hibus
+    # cd hibox
+    # mkdir build
+    # cd build
+    # cmake ../ -DBUILD_APP_AUTH=OFF
+    # make
+    # sudo make install
+    ```
+- 创建运行环境
+    ```bash
+    # cd hibus/tools
+    # sudo ./mk_app_keys.sh cn.summer.hzy
+    ```
+- 编译hibus-busybox
+    ```bash
+    # git clone git@github.com:ninexue/hibus-enhance.git
+    # cd hibus-enhance
+    # mkdir build
+    # cd build
+    # cmake ../ -DBUILD_HIBUS_NATIVE=OFF
+    # make
+    ```
+    编译选项`BUILD_HIBUS_NATIVE`为`ON`，表示所编译的库为`Hibus`的内建库，`APP_NAME`为`cn.fmsoft.hybridos.hibus`。如果为`OFF`，编译为测试库，`APP_NAME`为`cn.summer.hzy`。
+
+## 运行方法
 
 ## busybox 提供给应用的接口
 
