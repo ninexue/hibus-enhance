@@ -40,7 +40,7 @@ chdir_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -48,7 +48,7 @@ chdir_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
@@ -92,7 +92,7 @@ ls_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -100,7 +100,7 @@ ls_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
@@ -112,7 +112,7 @@ ls_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get list error.\n\n\n");
         return -1;
     }
-       size = json_object_array_length(jo_tmp);
+    size = json_object_array_length(jo_tmp);
     list = jo_tmp;
 
     fprintf(stderr, "total %ld\n", size);
@@ -181,7 +181,7 @@ touch_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -189,7 +189,7 @@ touch_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
@@ -229,7 +229,7 @@ unlink_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -237,7 +237,7 @@ unlink_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
@@ -277,7 +277,7 @@ mkdir_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -285,7 +285,7 @@ mkdir_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
@@ -325,7 +325,7 @@ rm_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -333,7 +333,7 @@ rm_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
@@ -373,7 +373,7 @@ rmdir_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errCode error.\n\n\n");
         return -1;
     }
-       errCode = json_object_get_int(jo_tmp);
+    errCode = json_object_get_int(jo_tmp);
 
     // get error message
     if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
@@ -381,7 +381,7 @@ rmdir_handler(hibus_conn* conn, const char* from_endpoint,
         fprintf(stderr, "Get errMsg error.\n\n\n");
         return -1;
     }
-       errMsg = json_object_get_string(jo_tmp);
+    errMsg = json_object_get_string(jo_tmp);
 
     fprintf(stderr, "return code = %d\n", ret_code);
     fprintf(stderr, "error  code = %d\n", errCode);
