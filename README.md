@@ -13,7 +13,7 @@
    + `dictName`：要设置的工作目录的全路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "dictName":"full_path"
     }
 ```
@@ -34,9 +34,9 @@
    + `path`：指定的目录，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "path":"path",
-		"option":"a",
+        "option":"a",
     }
 ```
 - 返回值：
@@ -94,7 +94,7 @@
    + `fileName`：要删除文件或目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -136,7 +136,7 @@
    + `fileName`：要创建目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -157,7 +157,7 @@
    + `fileName`：要删除文件的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -177,7 +177,7 @@
    + `fileName`：要修改属性的文件路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
