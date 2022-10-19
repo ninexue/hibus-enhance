@@ -9,7 +9,7 @@ struct wildcard_list
 
 
 #define	PROCEDURE_PARAM	hibus_conn* conn, const char* from_endpoint, \
-				const char* to_method, const char* method_param, int *err_code
+            const char* to_method, const char* method_param, int *err_code
 
 #ifdef __cplusplus
 extern "C" {

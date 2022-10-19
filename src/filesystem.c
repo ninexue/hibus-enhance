@@ -1164,7 +1164,6 @@ void fs_register(hibus_conn *context)
             fprintf(stderr, "Busybox--filesystem: Error for register procedure"
                             "%s, %s.\n", fs_procedure[i].name,
                             hibus_get_err_message(ret_code));
-            return;
         }
     }
 
@@ -1177,7 +1176,6 @@ void fs_register(hibus_conn *context)
             fprintf(stderr, "Busybox--filesystem: Error for register event"
                             "%s, %s.\n",
                             fs_event[i].name, hibus_get_err_message(ret_code));
-            return;
         }
     }
 }
