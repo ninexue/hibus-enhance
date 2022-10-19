@@ -193,25 +193,42 @@
 
 ### 错误代码表
 
-| 宏定义                      | errCode | errMsg                                   | 备注                     |
-| --------------------------- | ------- | ---------------------------------------- | ------------------------ |
-| ERR_NO                      | 0       | success                                  | 正常                     |
-| ERR_LIBRARY_OPERATION       | -1      | an error ocures in library operation     | 错误发生在工具层         |
-| ERR_NONE_DEVICE_LIST        | -2      | can not get devices list.                | 无法获得网络设备列表     |
-| ERR_WRONG_PROCEDURE         | -3      | wrong procedure name.                    | 错误的远程调用名称       |
-| ERR_WRONG_JSON              | -4      | wrong Json format.                       | 错误的JSON格式           |
-| ERR_NO_DEVICE_NAME_IN_PARAM | -5      | can not find device name in param.       | 设备名不在网络设备列表中 |
-| ERR_NO_DEVICE_IN_SYSTEM     | -6      | can not find device in system.           | 系统中找不到该设备       |
-| ERR_DEVICE_TYPE             | -7      | invalid network device type.             | 错误的网络设备类型       |
-| ERR_LOAD_LIBRARY            | -8      | some error in load library.              | 装载动态库失败           |
-| ERR_NOT_WIFI_DEVICE         | -9      | device is not WiFi device.               | 该设备并非WiFi设备       |
-| ERR_DEVICE_NOT_OPENNED      | -10     | device has not openned.                  | 网络设备还未打开         |
-| ERR_OPEN_WIFI_DEVICE        | -11     | an error ocurs in open wifi device.      | 打开WiFi设备错误         |
-| ERR_CLOSE_WIFI_DEVICE       | -12     | an error ocurs in close wifi device.     | 关闭WiFi设备错误         |
-| ERR_OPEN_ETHERNET_DEVICE    | -13     | an error ocurs in open ethernet device.  | 打开Ethernet设备错误     |
-| ERR_CLOSE_ETHERNET_DEVICE   | -14     | an error ocurs in close ethernet device. | 关闭Ethernet设备错误     |
-| ERR_OPEN_MOBILE_DEVICE      | -15     | an error ocurs in open mobile device.    | 打开Mobile设备错误       |
-| ERR_CLOSE_MOBILE_DEVICE     | -16     | an error ocurs in close mobile device.   | 关闭Mobile设备错误       |
-| ERR_DEVICE_NOT_CONNECT      | -17     | device does not connect any network.     | 网络设备未连接           |
-
-
+| 宏定义                          | errCode | errMsg                                        |
+| ------------------------------- | ------- | --------------------------------------------- |
+| ERROR_BUSYBOX_OK                | 0       | Success.                                      |
+| ERROR_BUSYBOX_EACCES            | -1      | Permission denied.                            |
+| ERROR_BUSYBOX_EBUSY             | -2      | Device is busy.                               |
+| ERROR_BUSYBOX_EFAULT            | -3      | Bad address.                                  |
+| ERROR_BUSYBOX_EIO               | -4      | Input/output error.                           |
+| ERROR_BUSYBOX_EISDIR            | -5      | Is a directory.                               |
+| ERROR_BUSYBOX_ELOOP             | -6      | Too many levels of symbolic links.            |
+| ERROR_BUSYBOX_ENAMETOOLONG      | -7      | File name is too long.                        |
+| ERROR_BUSYBOX_ENOENT            | -8      | No such file or directory.                    |
+| ERROR_BUSYBOX_ENOMEM            | -9      | Insufficient kernel memory was available.     |
+| ERROR_BUSYBOX_ENOTDIR           | -10     | Is not a directory.                           |
+| ERROR_BUSYBOX_EPERM             | -11     | Operation is not permitted.                   |
+| ERROR_BUSYBOX_EROFS             | -12     | The file is on a read-only filesystem.        |
+| ERROR_BUSYBOX_EBADF             | -13     | Bad file descriptor.                          |
+| ERROR_BUSYBOX_EINVAL            | -14     | Invalid argument.                             |
+| ERROR_BUSYBOX_ESRCH             | -15     | No such process.                              |
+| ERROR_BUSYBOX_ENOSPC            | -16     | No space left on device.                      |
+| ERROR_BUSYBOX_ENOTEMPTY         | -17     | Directory is not empty.                       |
+| ERROR_BUSYBOX_EWOULDBLOCK       | -18     | Operation would block.                        |
+| ERROR_BUSYBOX_ETXTBSY           | -19     | Text file is busy.                            |
+| ERROR_BUSYBOX_EOVERFLOW         | -20     | Value is too large to be stored in data type. |
+| ERROR_BUSYBOX_EOPNOTSUPP        | -21     | Operation is not supported.                   |
+| ERROR_BUSYBOX_ENXIO             | -22     | Device is not configured.                     |
+| ERROR_BUSYBOX_ENODEV            | -23     | Operation is not supported by device.         |
+| ERROR_BUSYBOX_ENFILE            | -24     | Too many open files are in system.            |
+| ERROR_BUSYBOX_EDQUOT            | -25     | Disc quota is exceeded.                       |
+| ERROR_BUSYBOX_EEXIST            | -26     | File exists.                                  |
+| ERROR_BUSYBOX_EFBIG             | -27     | File is too large.                            |
+| ERROR_BUSYBOX_EINTR             | -28     | Interrupted system call.                      |
+| ERROR_BUSYBOX_EMFILE            | -29     | Too many open files.                          |
+| ERROR_BUSYBOX_INVALID_PARAM     | -30     | Invalid parameter.                            |
+| ERROR_BUSYBOX_INSUFFICIENT_MEM  | -31     | Insufficient memory.                          |
+| ERROR_BUSYBOX_CONNECT_HIBUS     | -32     | Can not connect to Hibus server.              |
+| ERROR_BUSYBOX_WRONG_PROCEDURE   | -33     | Wrong procedure name.                         |
+| ERROR_BUSYBOX_WRONG_JSON        | -34     | Wrong Json format.                            |
+| ERROR_BUSYBOX_WORKING_DIRECTORY | -35     | Current working directory has not benn set.   |
+| ERROR_BUSYBOX_UNKONOWN          | -36     | Unknow error.                                 |
