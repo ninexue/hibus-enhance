@@ -1,5 +1,61 @@
-# Hibus busybox 协议
+# Hibus busybox 说明
 
+## 编译方法
+
+- 编译hibox
+    ```bash
+    # git clone https://github.com/FMSoftCN/hibox
+    # cd hibox
+    # mkdir build
+    # cd build
+    # cmake ../
+    # make
+    # sudo make install
+    ```
+- 编译hibus
+    ```bash
+    # git clone https://github.com/FMSoftCN/hibus
+    # cd hibox
+    # mkdir build
+    # cd build
+    # cmake ../ -DBUILD_APP_AUTH=OFF
+    # make
+    # sudo make install
+    ```
+- 创建运行环境
+    ```bash
+    # cd hibus/tools
+    # sudo ./mk_app_keys.sh cn.summer.hzy
+    ```
+- 编译hibus-busybox
+    ```bash
+    # git clone git@github.com:ninexue/hibus-enhance.git
+    # cd hibus-enhance
+    # mkdir build
+    # cd build
+    # cmake ../ -DBUILD_HIBUS_NATIVE=OFF
+    # make
+    ```
+    编译选项`BUILD_HIBUS_NATIVE`为`ON`，表示所编译的库为`Hibus`的内建库，`APP_NAME`为`cn.fmsoft.hybridos.hibus`。如果为`OFF`，编译为测试库，`APP_NAME`为`cn.summer.hzy`。
+
+## 运行方法
+
+为了测试和调试方便，首先将代码编译为测试库，用下面的方法进行测试和运行：
+
+- 终端窗口1
+    ```bash
+    # sudo hibusd
+    ```
+- 终端窗口2
+    ```bash
+    # cd hibus-enhance/public/test
+    # ./busybox-test
+    ```
+- 终端窗口3
+    ```bash
+    # cd hibus-enhance/public/test
+    # ./test
+    ```
 ## busybox 提供给应用的接口
 
 `busybox`只提供远程过程，不提供订阅事件。
@@ -13,7 +69,7 @@
    + `dictName`：要设置的工作目录的全路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "dictName":"full_path"
     }
 ```
@@ -34,9 +90,9 @@
    + `path`：指定的目录，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "path":"path",
-		"option":"a",
+        "option":"a",
     }
 ```
 - 返回值：
@@ -94,7 +150,7 @@
    + `fileName`：要删除文件或目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -115,7 +171,7 @@
    + `fileName`：要删除空目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -136,7 +192,7 @@
    + `fileName`：要创建目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -157,7 +213,7 @@
    + `fileName`：要删除文件的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
@@ -177,7 +233,7 @@
    + `fileName`：要修改属性的文件路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
