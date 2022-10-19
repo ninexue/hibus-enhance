@@ -222,70 +222,64 @@ failed:
     return ret_string;
 }
 
-static bool wildcard_cmp(const char *str, const char *pattern)
+static bool wildcard_cmp(const char *text, const char *pattern)
 {
-    int len1 = 0;
-    int len2 = 0;
-    int mark = 0;
-    int p1 = 0;
-    int p2 = 0;
+	if(text == NULL)
+		return false;
 
-    if(str == NULL)
-        return false;
+	if(pattern == NULL)
+		return false;
 
-    if(pattern == NULL)
-        return false;
-
-    len1 = strlen (str);
-    len2 = strlen (pattern);
-
-    while((p1 < len1) && (p2 < len2))
+	while((pattern[0] != '\0') && (text[0] != '\0'))
 	{
-        if(pattern[p2] == '?')
+        if(pattern[0] == '?')
 		{
-            p1++;
-            p2++;
-            continue;
-        }
-
-        if(pattern[p2] == '*')
-		{
-            p2++;
-            mark = p2;
-            continue;
-        }
-
-        if(str[p1] != pattern[p2])
-		{
-            if (p1 == 0 && p2 == 0)
+            if(!text[0])
                 return false;
 
-            p1 -= p2 - mark - 1;
-            p2 = mark;
-            continue;
+            if(pattern[1] == '?')
+			{
+                pattern += 2;
+            }
+			else
+			{
+                if(text[0] == '/')
+                    return false;
+
+                ++pattern;
+            }
+
+            ++text;
         }
-        p1++;
-        p2++;
+		else if(pattern[0] == '*')
+		{
+            int allow_slash = pattern[1] == '*';
+
+            while(pattern[0] == '*')
+			{
+                ++pattern;
+            }
+
+            if(allow_slash && pattern[0] == '\0')
+                return true;
+
+            do
+			{
+                if(wildcard_cmp(text, pattern))
+                    return true;
+            } while((text[0] != '\0') && (*text++ != '/' || allow_slash));
+        }
+		else
+		{
+            if(text[0] != pattern[0])
+                return false;
+
+            ++pattern;
+            ++text;
+        }
     }
 
-    if(p2 == len2)
-	{
-        if (p1 == len1)
-            return true;
-
-        if (pattern[p2 - 1] == '*')
-            return true;
-    }
-
-    while(p2 < len2)
-	{
-        if (pattern[p2] != '*')
-            return false;
-
-        p2++;
-    }
-
-    return true;
+    return *pattern == *text;
 }
 
 static void
@@ -349,24 +343,6 @@ make_file_list(char *filename, struct stat *file_stat, char *ret_string)
 	}
 	strcat(ret_string, "\",");
 
-#if 0
-	sprintf(ret_string + strlen(ret_string),
-				"\"link\":%lu,"
-				"\"uid\":%u,"
-				"\"gid\":%u,"
-				"\"rdev\":%lu,"
-				"\"size\":%ld,"
-				"\"blksize\":%ld,"
-				"\"blocks\":%ld,"
-				"\"atime\":\"%s\","
-				"\"mtime\":\"%s\","
-				"\"ctime\":\"%s\""
-				"}",
-				file_stat->st_nlink, file_stat->st_uid, file_stat->st_gid,
-				file_stat->st_rdev, file_stat->st_size, file_stat->st_blksize,
-				file_stat->st_blocks, ctime(&(file_stat->st_atime)),
-				ctime(&(file_stat->st_mtime)), ctime(&(file_stat->st_ctime)));
-#endif
 	sprintf(ret_string + strlen(ret_string),
 				"\"link\":%lu,"
 				"\"uid\":%u,"
@@ -558,10 +534,6 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 			}
 		}
 	}
-
-printf("dirname: %s\n", dirname);
-printf("filename: %s\n", filename);
-printf("wildcard: %s\n", wildcard);
 
 	if(filename[0] == 0)
 	{
