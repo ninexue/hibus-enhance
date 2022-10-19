@@ -115,7 +115,7 @@
    + `fileName`：要删除空目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
-		"euid": euid,
+        "euid": euid,
         "fileName":"path"
     }
 ```
