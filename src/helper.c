@@ -25,7 +25,7 @@ const char *op_errors[] = {
 	"Insufficient kernel memory was available.",	// ENOMEM
 	"Is not a directory.",							// ENOTDIR
 	"Operation is not permitted.",					// EPERM
-	"The file is on a read-only filesystem."		// EROFS
+	"The file is on a read-only filesystem.",		// EROFS
 	"Bad file descriptor.",							// EBADF
 	"Invalid argument.",							// EINVAL
 	"No such process.",								// ESRCH

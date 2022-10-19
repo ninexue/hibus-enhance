@@ -67,7 +67,7 @@ int main(void)
     while(1)
     {
         ret = hibus_wait_and_dispatch_packet(conn, 1000);
-        if(ret)
+		if(ret && (ret != HIBUS_EC_TIMEOUT))
             fprintf(stderr, "Busybox runner: error for "
 							"hibus_wait_and_dispatch_packet, %s.\n",
 							hibus_get_err_message(ret));

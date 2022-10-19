@@ -36,10 +36,11 @@
     {
 		"euid": euid,
         "path":"path",
+		"option":"a",
     }
 ```
 - 返回值：
-   + `data`：返回的数据：
+   + `list`：返回的数据：
      + `name`：文件名；
      + `dev`：包含文件的设备ID；
      + `inode`：节点号；

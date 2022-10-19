@@ -349,6 +349,7 @@ make_file_list(char *filename, struct stat *file_stat, char *ret_string)
 	}
 	strcat(ret_string, "\",");
 
+#if 0
 	sprintf(ret_string + strlen(ret_string),
 				"\"link\":%lu,"
 				"\"uid\":%u,"
@@ -365,17 +366,44 @@ make_file_list(char *filename, struct stat *file_stat, char *ret_string)
 				file_stat->st_rdev, file_stat->st_size, file_stat->st_blksize,
 				file_stat->st_blocks, ctime(&(file_stat->st_atime)),
 				ctime(&(file_stat->st_mtime)), ctime(&(file_stat->st_ctime)));
+#endif
+	sprintf(ret_string + strlen(ret_string),
+				"\"link\":%lu,"
+				"\"uid\":%u,"
+				"\"gid\":%u,"
+				"\"rdev\":%lu,"
+				"\"size\":%ld,"
+				"\"blksize\":%ld,"
+				"\"blocks\":%ld,",
+				file_stat->st_nlink, file_stat->st_uid, file_stat->st_gid,
+				file_stat->st_rdev, file_stat->st_size, file_stat->st_blksize,
+				file_stat->st_blocks);
+	strcat(ret_string + strlen(ret_string), "\"atime\":\"");
+	strcat(ret_string + strlen(ret_string), ctime(&(file_stat->st_atime)));
+	ret_string[strlen(ret_string) - 1] = 0;
+
+	strcat(ret_string + strlen(ret_string), "\",\"mtime\":\"");
+	strcat(ret_string + strlen(ret_string), ctime(&(file_stat->st_mtime)));
+	ret_string[strlen(ret_string) - 1] = 0;
+
+	strcat(ret_string + strlen(ret_string), "\",\"ctime\":\"");
+	strcat(ret_string + strlen(ret_string), ctime(&(file_stat->st_ctime)));
+	ret_string[strlen(ret_string) - 1] = 0;
+
+	strcat(ret_string + strlen(ret_string), "\"}");
 }
 
 char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 				const char* to_method, const char* method_param, int *err_code)
 {
-    char * ret_string = malloc(8192);
+	size_t mem_size = 8192;
+    char * ret_string = malloc(mem_size);
     int ret_code = ERROR_BUSYBOX_OK;
     hibus_json *jo = NULL;
     hibus_json *jo_tmp = NULL;
 	uid_t euid;
 	const char *path = NULL;
+	const char *option = NULL;
     char full_path[PATH_MAX] = {0, };
     char dirname[PATH_MAX] = {0, };
     char filename[PATH_MAX] = {0, };
@@ -410,6 +438,12 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
     }
    	euid = json_object_get_int(jo_tmp);
 	change_euid(from_endpoint, euid);
+
+    // get option
+    if(json_object_object_get_ex(jo, "option", &jo_tmp) == 0)
+		option = NULL;
+	else
+   		option = json_object_get_string(jo_tmp);
 
 	// get file name and wildcard
     if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
@@ -525,6 +559,9 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 		}
 	}
 
+printf("dirname: %s\n", dirname);
+printf("filename: %s\n", filename);
+printf("wildcard: %s\n", wildcard);
 
 	if(filename[0] == 0)
 	{
@@ -550,6 +587,17 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 					continue;
 			}
 
+			if(option == NULL)
+			{
+				if(ptr->d_name[0] == '.')
+					continue;
+			}
+			else
+			{
+				if(strchr(option, 'a') == NULL)
+				{
+				}
+			}
         	strcpy (filename, dirname);
 	 	    strcat (filename, "/");
         	strcat (filename, ptr->d_name);
@@ -562,6 +610,11 @@ char * listDirectory(hibus_conn* conn, const char* from_endpoint,
 			else
 				sprintf(ret_string + strlen(ret_string), ",");
 
+			if(strlen(ret_string) > (mem_size - 512))
+			{
+				mem_size += 8192;
+				ret_string = realloc(ret_string, mem_size);
+			}
 			make_file_list(ptr->d_name, &file_stat, ret_string);
 		}
 
