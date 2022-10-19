@@ -40,6 +40,22 @@
 
 ## 运行方法
 
+为了测试和调试方便，首先将代码编译为测试库，用下面的方法进行测试和运行：
+
+- 终端窗口1
+    ```bash
+    # sudo hibusd
+    ```
+- 终端窗口2
+    ```bash
+    # cd hibus-enhance/public/test
+    # ./busybox-test
+    ```
+- 终端窗口3
+    ```bash
+    # cd hibus-enhance/public/test
+    # ./test
+    ```
 ## busybox 提供给应用的接口
 
 `busybox`只提供远程过程，不提供订阅事件。
