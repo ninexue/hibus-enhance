@@ -32,13 +32,14 @@
 #define ERROR_BUSYBOX_EFBIG             -27
 #define ERROR_BUSYBOX_EINTR             -28
 #define ERROR_BUSYBOX_EMFILE            -29
-#define ERROR_BUSYBOX_INVALID_PARAM     -30
-#define ERROR_BUSYBOX_INSUFFICIENT_MEM  -31
-#define ERROR_BUSYBOX_CONNECT_HIBUS     -32
-#define ERROR_BUSYBOX_WRONG_PROCEDURE   -33
-#define ERROR_BUSYBOX_WRONG_JSON        -34
-#define ERROR_BUSYBOX_WORKING_DIRECTORY -35
-#define ERROR_BUSYBOX_UNKONOWN          -36
+#define ERROR_BUSYBOX_ENOSYS            -30
+#define ERROR_BUSYBOX_INVALID_PARAM     -31
+#define ERROR_BUSYBOX_INSUFFICIENT_MEM  -32
+#define ERROR_BUSYBOX_CONNECT_HIBUS     -33
+#define ERROR_BUSYBOX_WRONG_PROCEDURE   -34
+#define ERROR_BUSYBOX_WRONG_JSON        -35
+#define ERROR_BUSYBOX_WORKING_DIRECTORY -36
+#define ERROR_BUSYBOX_UNKONOWN          -37
 
 #define ERROR_LOAD_LIB                  -100
 #define ERROR_FIND_SYM                  -101
@@ -52,6 +53,7 @@
 #define METHOD_HIBUS_BUSYBOX_UNLINK     "unlink"
 #define METHOD_HIBUS_BUSYBOX_TOUCH      "touch"
 #define METHOD_HIBUS_BUSYBOX_CHDIR      "chdir"
+#define METHOD_HIBUS_BUSYBOX_DF         "df"
 
 #ifdef __cplusplus
 extern "C" {

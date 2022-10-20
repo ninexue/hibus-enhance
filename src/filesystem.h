@@ -7,7 +7,7 @@ extern "C" {
 
 /****************************************************************************
  * Subroutine:  fs_register
- * Function:    register procedure and event for busybox runner
+ * Function:    register file system procedure and event for busybox runner
  * Input:       hibus_context[I], Hibus context
  * Output:      None
  * Description:
@@ -19,7 +19,7 @@ void fs_register(hibus_conn *hibus_context);
 
 /****************************************************************************
  * Subroutine:  fs_revoke
- * Function:    revoke procedure and event for busybox runner
+ * Function:    revoke file system procedure and event for busybox runner
  * Input:       hibus_context[I], Hibus context
  * Output:      None
  * Description:
