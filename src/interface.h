@@ -13,6 +13,9 @@
 
 #define RUNNER_NAME_BUSYBOX "busybox"
 
+#define	PROCEDURE_PARAM	hibus_conn* conn, const char* from_endpoint, \
+            const char* to_method, const char* method_param, int *err_code
+
 struct busybox_procedure
 {
     const char *name;

@@ -18,9 +18,9 @@
 #include <hibus.h>
 
 #include "hibus_busybox.h"
+#include "interface.h"
 #include "helper.h"
 #include "filesystem.h"
-#include "interface.h"
 
 static hibus_user *hiuser = NULL;
 

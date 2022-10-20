@@ -1,16 +1,6 @@
 #ifndef __HIBUS_BUSYBOX_FS__
 #define __HIBUS_BUSYBOX_FS__
 
-struct wildcard_list
-{
-    char *wildcard;
-    struct wildcard_list *next;
-};
-
-
-#define	PROCEDURE_PARAM	hibus_conn* conn, const char* from_endpoint, \
-            const char* to_method, const char* method_param, int *err_code
-
 #ifdef __cplusplus
 extern "C" {
 #endif
