@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <sys/vfs.h>
 
 #include <hibus.h>
 #include <hibox/json.h>
@@ -41,6 +42,12 @@ char * getDiskInfo(hibus_conn* conn, const char* from_endpoint,
     struct dirent *dp = NULL;
     bool empty = true;
     hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
+    struct statfs diskInfo;
+    unsigned long long blocksize = 0;
+    unsigned long long totalsize = 0;
+    unsigned long long freeDisk = 0;
+    unsigned long long availableDisk = 0;
+
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_DF,
@@ -98,6 +105,11 @@ char * getDiskInfo(hibus_conn* conn, const char* from_endpoint,
     else
         strcpy(full_path, path);
 
+    statfs(full_path, &diskInfo);
+    blocksize = diskInfo.f_bsize;
+    totalsize = blocksize * diskInfo.f_blocks;
+    freeDisk = diskInfo.f_bfree * blocksize;
+    availableDisk = blocksize * diskInfo.f_bavail;
 
 failed:
     if(jo)

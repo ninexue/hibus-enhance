@@ -66,6 +66,7 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/chdir`
 - 参数：
+   + `euid`：调用者的有效用户ID；
    + `dictName`：要设置的工作目录的全路径；
 ```json
     {
@@ -87,7 +88,9 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/ls`
 - 参数：
+   + `euid`：调用者的有效用户ID；
    + `path`：指定的目录，如果不是以`/`开头，则认为是相对路径；
+   + `option`：`ls`命令参数，目前支持`a`；
 ```json
     {
         "euid": euid,
@@ -147,6 +150,7 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rm`
 - 参数：
+   + `euid`：调用者的有效用户ID；
    + `fileName`：要删除文件或目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
@@ -168,6 +172,7 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/rmdir`
 - 参数：
+   + `euid`：调用者的有效用户ID；
    + `fileName`：要删除空目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
@@ -189,6 +194,7 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/mkdir`
 - 参数：
+   + `euid`：调用者的有效用户ID；
    + `fileName`：要创建目录的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
@@ -210,6 +216,7 @@
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/unlink`
 - 参数：
+   + `euid`：调用者的有效用户ID；
    + `fileName`：要删除文件的路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
@@ -230,6 +237,7 @@
 #### 修改文件属性
 
 - 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/touch`
+   + `euid`：调用者的有效用户ID；
    + `fileName`：要修改属性的文件路径，如果不是以`/`开头，则认为是相对路径；
 ```json
     {
@@ -242,6 +250,35 @@
    + `errMsg`：错误信息。
 ```json
     {
+        "errCode":0,
+        "errMsg":"OK"
+    }
+```
+
+#### 获取当前文件系统的磁盘空间
+
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/df`
+   + `euid`：调用者的有效用户ID；
+   + `fileName`：要修改属性的文件路径，如果不是以`/`开头，则认为是相对路径；
+```json
+    {
+        "euid": euid,
+        "fileName":"path"
+    }
+```
+- 返回值：
+   + `blocksize`: 磁盘块大小；
+   + `totalsize`: 分区占用块数；
+   + `freeDisk`: 空闲空间；
+   + `availableDisk`: 可使用的空间；
+   + `errCode`：返回错误编码，见附表；
+   + `errMsg`：错误信息。
+```json
+    {
+        "blocksize": 512
+        "totalsize": 123456789
+        "freeDisk": 2333333
+        "availableDisk": 2444444
         "errCode":0,
         "errMsg":"OK"
     }
