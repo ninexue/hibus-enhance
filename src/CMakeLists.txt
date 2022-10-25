@@ -17,7 +17,6 @@ set(LIB_SRCS
 	helper.c
     interface.c
     filesystem.c
-    system.c
 )
 
 ADD_LIBRARY(hibus-busybox SHARED ${LIB_SRCS})

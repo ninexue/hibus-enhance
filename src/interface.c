@@ -18,10 +18,9 @@
 #include <hibus.h>
 
 #include "hibus_busybox.h"
-#include "interface.h"
 #include "helper.h"
 #include "filesystem.h"
-#include "system.h"
+#include "interface.h"
 
 static hibus_user *hiuser = NULL;
 
@@ -54,7 +53,6 @@ int init_runner(hibus_conn **conn, void *data)
 
     // register remote procedure and event
     fs_register(hiuser->context);
-    sys_register(hiuser->context);
 
     *conn = hiuser->context;
 
@@ -64,8 +62,6 @@ int init_runner(hibus_conn **conn, void *data)
 int deinit_runner(void)
 {
     int ret = ERROR_BUSYBOX_OK;
-    struct env_param *env = hiuser->env;
-    struct env_param *tmp_env = env;
 
     if(hiuser == NULL)
         return ERROR_BUSYBOX_INVALID_PARAM;
@@ -74,22 +70,11 @@ int deinit_runner(void)
     {
         // revoke remote procedure and event here
         fs_revoke(hiuser->context);
-        sys_revoke(hiuser->context);
 
         // disconnect to hibus server
         hibus_disconnect(hiuser->context);
 
         // free hiuser
-        while(env)
-        {
-            if(env->key)
-                free(env->key);
-            if(env->value)
-                free(env->value);
-            tmp_env = env;
-            free(env);
-            env = tmp_env;
-        }
         free(hiuser);
         hiuser = NULL;
     }
