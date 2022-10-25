@@ -15,6 +15,202 @@
 #define RUNNER_NAME_BUSYBOX "busybox"
 
 static int
+setenv_handler(hibus_conn* conn, const char* from_endpoint,
+            const char* method_name, const char *call_id,
+            int ret_code, const char* ret_value)
+{
+    hibus_json *jo = NULL;
+    hibus_json *jo_tmp = NULL;
+    int errCode = 0;
+    const char *errMsg = NULL;
+
+    fprintf(stderr, "============= setenv ============\n");
+
+    // analyze json
+    jo = hibus_json_object_from_string(ret_value, strlen(ret_value), 2);
+    if(jo == NULL)
+    {
+        fprintf(stderr, "Json syntax error.\n\n\n");
+        return -1;
+    }
+
+    // get error code
+    if(json_object_object_get_ex(jo, "errCode", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get errCode error.\n\n\n");
+        return -1;
+    }
+    errCode = json_object_get_int(jo_tmp);
+
+    // get error message
+    if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get errMsg error.\n\n\n");
+        return -1;
+    }
+    errMsg = json_object_get_string(jo_tmp);
+
+    fprintf(stderr, "return code = %d\n", ret_code);
+    fprintf(stderr, "error  code = %d\n", errCode);
+    fprintf(stderr, "error message: %s\n", errMsg);
+
+    fprintf(stderr, "\n\n\n");
+
+    if(jo)
+        json_object_put (jo);
+
+    return 0;
+}
+
+static int
+getenv_handler(hibus_conn* conn, const char* from_endpoint,
+            const char* method_name, const char *call_id,
+            int ret_code, const char* ret_value)
+{
+    hibus_json *jo = NULL;
+    hibus_json *jo_tmp = NULL;
+    int errCode = 0;
+    const char *errMsg = NULL;
+    const char *value = NULL;
+
+    fprintf(stderr, "============= getenv ============\n");
+
+    // analyze json
+    jo = hibus_json_object_from_string(ret_value, strlen(ret_value), 2);
+    if(jo == NULL)
+    {
+        fprintf(stderr, "Json syntax error.\n\n\n");
+        return -1;
+    }
+
+    // get env
+    if(json_object_object_get_ex(jo, "value", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get ENV value error.\n\n\n");
+        return -1;
+    }
+    value = json_object_get_string(jo_tmp);
+
+    // get error code
+    if(json_object_object_get_ex(jo, "errCode", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get errCode error.\n\n\n");
+        return -1;
+    }
+    errCode = json_object_get_int(jo_tmp);
+
+    // get error message
+    if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get errMsg error.\n\n\n");
+        return -1;
+    }
+    errMsg = json_object_get_string(jo_tmp);
+
+
+    fprintf(stderr, "ENV TEST value is %s\n", value);
+    fprintf(stderr, "return code = %d\n", ret_code);
+    fprintf(stderr, "error  code = %d\n", errCode);
+    fprintf(stderr, "error message: %s\n", errMsg);
+
+    fprintf(stderr, "\n\n\n");
+
+    if(jo)
+        json_object_put (jo);
+
+    return 0;
+}
+
+static int
+df_handler(hibus_conn* conn, const char* from_endpoint,
+            const char* method_name, const char *call_id,
+            int ret_code, const char* ret_value)
+{
+    hibus_json *jo = NULL;
+    hibus_json *jo_tmp = NULL;
+    unsigned long long blocksize = 0;
+    unsigned long long totalsize = 0;
+    unsigned long long freeDisk = 0;
+    unsigned long long availableDisk = 0;
+    int errCode = 0;
+    const char *errMsg = NULL;
+
+    fprintf(stderr, "============= df ============\n");
+
+    // analyze json
+    jo = hibus_json_object_from_string(ret_value, strlen(ret_value), 2);
+    if(jo == NULL)
+    {
+        fprintf(stderr, "Json syntax error.\n\n\n");
+        return -1;
+    }
+
+    // get block size
+    if(json_object_object_get_ex(jo, "blocksize", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get blocksize error.\n\n\n");
+        return -1;
+    }
+    blocksize = json_object_get_uint64(jo_tmp);
+
+    // get total size
+    if(json_object_object_get_ex(jo, "totalsize", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get totalsize error.\n\n\n");
+        return -1;
+    }
+    totalsize = json_object_get_uint64(jo_tmp);
+
+    // get freeDisk
+    if(json_object_object_get_ex(jo, "freeDisk", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get freeDisk error.\n\n\n");
+        return -1;
+    }
+    freeDisk = json_object_get_uint64(jo_tmp);
+
+    // get availableDisk
+    if(json_object_object_get_ex(jo, "availableDisk", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get availableDisk error.\n\n\n");
+        return -1;
+    }
+    availableDisk = json_object_get_uint64(jo_tmp);
+
+    // get error code
+    if(json_object_object_get_ex(jo, "errCode", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get errCode error.\n\n\n");
+        return -1;
+    }
+    errCode = json_object_get_int(jo_tmp);
+
+    // get error message
+    if(json_object_object_get_ex(jo, "errMsg", &jo_tmp) == 0)
+    {
+        fprintf(stderr, "Get errMsg error.\n\n\n");
+        return -1;
+    }
+    errMsg = json_object_get_string(jo_tmp);
+
+
+    fprintf(stderr, "blocksize = %lld\n", blocksize);
+    fprintf(stderr, "totalsize = %lld\n", totalsize);
+    fprintf(stderr, "freeDisk = %lld\n", freeDisk);
+    fprintf(stderr, "availableDisk = %lld\n", availableDisk);
+    fprintf(stderr, "return code = %d\n", ret_code);
+    fprintf(stderr, "error  code = %d\n", errCode);
+    fprintf(stderr, "error message: %s\n", errMsg);
+
+    fprintf(stderr, "\n\n\n");
+
+    if(jo)
+        json_object_put (jo);
+
+    return 0;
+}
+
+static int
 chdir_handler(hibus_conn* conn, const char* from_endpoint,
             const char* method_name, const char *call_id,
             int ret_code, const char* ret_value)
@@ -420,7 +616,7 @@ int main(void)
     endpoint = hibus_assemble_endpoint_name_alloc(HIBUS_LOCALHOST,
                     APP_NAME_SUMMER, RUNNER_NAME_BUSYBOX);
 
-    // chdir to inexistent directory, you will get an error.
+    // chdir to inexistent directory
     sprintf(command, "{\"euid\":%u, \"path\":\"%s/abcd\"}", euid, homedir);
     ret_code = hibus_call_procedure(hibus_context, endpoint,
                     METHOD_HIBUS_BUSYBOX_CHDIR, command, 1000,
@@ -431,6 +627,12 @@ int main(void)
     ret_code = hibus_call_procedure(hibus_context, endpoint,
                     METHOD_HIBUS_BUSYBOX_CHDIR, command, 1000,
                     chdir_handler, &call_id);
+
+    // get disk information
+    sprintf(command, "{\"euid\":%u, \"path\":\"%s\"}", euid, homedir);
+    ret_code = hibus_call_procedure(hibus_context, endpoint,
+                    METHOD_HIBUS_BUSYBOX_DF, command, 1000,
+                    df_handler, &call_id);
 
     // ls to only list visible files in $HOME
     sprintf(command, "{\"euid\":%u, \"path\":\"%s\"}", euid, homedir);
@@ -575,6 +777,19 @@ int main(void)
     ret_code = hibus_call_procedure(hibus_context, endpoint,
                     METHOD_HIBUS_BUSYBOX_LS, command, 1000,
                     ls_handler, &call_id);
+
+    // set env
+    sprintf(command, "{\"euid\":%u, \"envName\":\"TEST\", \"envValue\":"
+                     "\"HIBUS\"}", euid);
+    ret_code = hibus_call_procedure(hibus_context, endpoint,
+                    METHOD_HIBUS_BUSYBOX_SETENV, command, 1000,
+                    setenv_handler, &call_id);
+
+    // get env
+    sprintf(command, "{\"euid\":%u, \"envName\":\"TEST\"}", euid);
+    ret_code = hibus_call_procedure(hibus_context, endpoint,
+                    METHOD_HIBUS_BUSYBOX_GETENV, command, 1000,
+                    getenv_handler, &call_id);
 
     while(1)
     {

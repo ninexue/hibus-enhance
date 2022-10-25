@@ -25,262 +25,11 @@ static struct busybox_procedure fs_procedure[] =
     {METHOD_HIBUS_BUSYBOX_RMDIR,    removeEmptyDirectory},
     {METHOD_HIBUS_BUSYBOX_MKDIR,    makeDirectory},
     {METHOD_HIBUS_BUSYBOX_UNLINK,   unlinkFile},
-    {METHOD_HIBUS_BUSYBOX_TOUCH,    touchFile},
-    {METHOD_HIBUS_BUSYBOX_CHDIR,    changeDirectory}
+    {METHOD_HIBUS_BUSYBOX_TOUCH,    touchFile}
 };
 
 static struct busybox_event fs_event [] = {};
 
-static int get_error_code(void)
-{
-    int ret = ERROR_BUSYBOX_OK;
-    switch(errno)
-    {
-        case EACCES:
-            ret = ERROR_BUSYBOX_EACCES;
-            break;
-        case EBUSY:
-            ret = ERROR_BUSYBOX_EBUSY;
-            break;
-        case EFAULT:
-            ret = ERROR_BUSYBOX_EFAULT;
-            break;
-        case EIO:
-            ret = ERROR_BUSYBOX_EIO;
-            break;
-        case EISDIR:
-            ret = ERROR_BUSYBOX_EISDIR;
-            break;
-        case ELOOP:
-            ret = ERROR_BUSYBOX_ELOOP;
-            break;
-        case ENAMETOOLONG:
-            ret = ERROR_BUSYBOX_ENAMETOOLONG;
-            break;
-        case ENOENT:
-            ret = ERROR_BUSYBOX_ENOENT;
-            break;
-        case ENOMEM:
-            ret = ERROR_BUSYBOX_ENOMEM;
-            break;
-        case ENOTDIR:
-            ret = ERROR_BUSYBOX_ENOTDIR;
-            break;
-        case EPERM:
-            ret = ERROR_BUSYBOX_EPERM;
-            break;
-        case EROFS:
-            ret = ERROR_BUSYBOX_EROFS;
-            break;
-        case EBADF:
-            ret = ERROR_BUSYBOX_EBADF;
-            break;
-        case EINVAL:
-            ret = ERROR_BUSYBOX_EINVAL;
-            break;
-        case ESRCH:
-            ret = ERROR_BUSYBOX_ESRCH;
-            break;
-        case ENOSPC:
-            ret = ERROR_BUSYBOX_ENOSPC;
-            break;
-        case EWOULDBLOCK:
-            ret = ERROR_BUSYBOX_EWOULDBLOCK;
-            break;
-        case ETXTBSY:
-            ret = ERROR_BUSYBOX_ETXTBSY;
-            break;
-        case EOVERFLOW:
-            ret = ERROR_BUSYBOX_EOVERFLOW;
-            break;
-        case EOPNOTSUPP:
-            ret = ERROR_BUSYBOX_EOPNOTSUPP;
-            break;
-        case ENXIO:
-            ret = ERROR_BUSYBOX_ENXIO;
-            break;
-        case ENODEV:
-            ret = ERROR_BUSYBOX_ENODEV;
-            break;
-        case ENFILE:
-            ret = ERROR_BUSYBOX_ENFILE;
-            break;
-        case EDQUOT:
-            ret = ERROR_BUSYBOX_EDQUOT;
-            break;
-        case EEXIST:
-            ret = ERROR_BUSYBOX_EEXIST;
-            break;
-        case EFBIG:
-            ret = ERROR_BUSYBOX_EFBIG;
-            break;
-        case EINTR:
-            ret = ERROR_BUSYBOX_EINTR;
-            break;
-        case EMFILE:
-            ret = ERROR_BUSYBOX_EMFILE;
-            break;
-        default:
-            ret = ERROR_BUSYBOX_UNKONOWN;
-            break;
-    }
-
-    return ret;
-}
-
-char * changeDirectory(hibus_conn* conn, const char* from_endpoint,
-                const char* to_method, const char* method_param, int *err_code)
-{
-    char * ret_string = malloc(128);
-    int ret_code = ERROR_BUSYBOX_OK;
-    hibus_json *jo = NULL;
-    hibus_json *jo_tmp = NULL;
-    uid_t euid;
-    const char *path = NULL;
-    char dirname[PATH_MAX] = {0, };
-    struct stat dict_stat;
-    hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
-
-    // get procedure name
-    if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_CHDIR,
-                                strlen(METHOD_HIBUS_BUSYBOX_LS)))
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
-        goto failed;
-    }
-
-    // analyze json
-    jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
-    if(jo == NULL)
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_JSON;
-        goto failed;
-    }
-
-    // get euid
-    if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_JSON;
-        goto failed;
-    }
-
-    euid = json_object_get_int(jo_tmp);
-    change_euid(from_endpoint, euid);
-
-    // get working directory
-    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_JSON;
-        goto failed;
-    }
-    path = json_object_get_string(jo_tmp);
-    if(path == NULL)
-    {
-        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
-        goto failed;
-    }
-
-    if(path[0] != '/')
-    {
-        if(user->cwd[0] == '/')
-        {
-            strcat(dirname, user->cwd);
-            strcat(dirname, "/");
-            strcat(dirname, path);
-        }
-        else
-        {
-            ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
-            goto failed;
-        }
-    }
-    else
-        strcpy(dirname, path);
-
-    if(stat(dirname, &dict_stat) < 0)
-    {
-           ret_code = ERROR_BUSYBOX_ENOENT;
-        goto failed;
-    }
-
-    if(!S_ISDIR(dict_stat.st_mode))
-    {
-           ret_code = ERROR_BUSYBOX_ENOTDIR;
-        goto failed;
-    }
-
-    strcpy(user->cwd, dirname);
-
-failed:
-    if(jo)
-        json_object_put (jo);
-
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
-
-    restore_euid();
-
-    return ret_string;
-}
-
-static bool wildcard_cmp(const char *text, const char *pattern)
-{
-    if(text == NULL)
-        return false;
-
-    if(pattern == NULL)
-        return false;
-
-    while((pattern[0] != '\0') && (text[0] != '\0'))
-    {
-        if(pattern[0] == '?')
-        {
-            if(!text[0])
-                return false;
-
-            if(pattern[1] == '?')
-            {
-                pattern += 2;
-            }
-            else
-            {
-                if(text[0] == '/')
-                    return false;
-
-                ++pattern;
-            }
-
-            ++text;
-        }
-        else if(pattern[0] == '*')
-        {
-            int allow_slash = pattern[1] == '*';
-
-            while(pattern[0] == '*')
-            {
-                ++pattern;
-            }
-
-            if(allow_slash && pattern[0] == '\0')
-                return true;
-
-            do
-            {
-                if(wildcard_cmp(text, pattern))
-                    return true;
-            } while((text[0] != '\0') && (*text++ != '/' || allow_slash));
-        }
-        else
-        {
-            if(text[0] != pattern[0])
-                return false;
-
-            ++pattern;
-            ++text;
-        }
-    }
-
-    return *pattern == *text;
-}
 
 static void
 make_file_list(char *filename, struct stat *file_stat, char *ret_string)
@@ -367,6 +116,42 @@ make_file_list(char *filename, struct stat *file_stat, char *ret_string)
     ret_string[strlen(ret_string) - 1] = 0;
 
     strcat(ret_string + strlen(ret_string), "\"}");
+}
+
+static int remove_dir(char *dir)
+{
+    int ret_code = ERROR_BUSYBOX_OK;
+    char dir_name[PATH_MAX];
+    DIR *dirp = NULL;
+    struct dirent *dp = NULL;
+    struct stat dir_stat;
+
+    stat(dir, &dir_stat);
+
+    if(S_ISDIR(dir_stat.st_mode))
+    {
+        dirp = opendir(dir);
+
+        while((dp = readdir(dirp)) != NULL)
+        {
+            if ((strcmp(dp->d_name, ".") == 0) ||
+                (strcmp(dp->d_name, "..") == 0))
+                continue;
+            sprintf(dir_name, "%s/%s", dir, dp->d_name);
+            remove_dir(dir_name);
+        }
+        closedir(dirp);
+
+        if(rmdir(dir))
+            ret_code = get_error_code();
+    }
+    else
+    {
+        if(unlink(dir) != 0)
+            ret_code = get_error_code();
+    }
+
+    return ret_code;
 }
 
 char * listDirectory(hibus_conn* conn, const char* from_endpoint,
@@ -609,42 +394,6 @@ failed:
 
 }
 
-static int remove_dir(char *dir)
-{
-    int ret_code = ERROR_BUSYBOX_OK;
-    char dir_name[PATH_MAX];
-    DIR *dirp = NULL;
-    struct dirent *dp = NULL;
-    struct stat dir_stat;
-
-    stat(dir, &dir_stat);
-
-    if(S_ISDIR(dir_stat.st_mode))
-    {
-        dirp = opendir(dir);
-
-        while((dp = readdir(dirp)) != NULL)
-        {
-            if ((strcmp(dp->d_name, ".") == 0) ||
-                (strcmp(dp->d_name, "..") == 0))
-                continue;
-            sprintf(dir_name, "%s/%s", dir, dp->d_name);
-            remove_dir(dir_name);
-        }
-        closedir(dirp);
-
-        if(rmdir(dir))
-            ret_code = get_error_code();
-    }
-    else
-    {
-        if(unlink(dir) != 0)
-            ret_code = get_error_code();
-    }
-
-    return ret_code;
-}
-
 char * removeFileDirectory(hibus_conn* conn, const char* from_endpoint,
                 const char* to_method, const char* method_param, int *err_code)
 {
@@ -660,7 +409,7 @@ char * removeFileDirectory(hibus_conn* conn, const char* from_endpoint,
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_RM,
-                                strlen(METHOD_HIBUS_BUSYBOX_LS)))
+                                strlen(METHOD_HIBUS_BUSYBOX_RM)))
     {
         ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
         goto failed;
@@ -753,7 +502,7 @@ char * removeEmptyDirectory(hibus_conn* conn, const char* from_endpoint,
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_RMDIR,
-                                strlen(METHOD_HIBUS_BUSYBOX_LS)))
+                                strlen(METHOD_HIBUS_BUSYBOX_RMDIR)))
     {
         ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
         goto failed;
@@ -871,7 +620,7 @@ char * makeDirectory(hibus_conn* conn, const char* from_endpoint,
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_MKDIR,
-                                strlen(METHOD_HIBUS_BUSYBOX_LS)))
+                                strlen(METHOD_HIBUS_BUSYBOX_MKDIR)))
     {
         ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
         goto failed;
@@ -962,7 +711,7 @@ char * unlinkFile(hibus_conn* conn, const char* from_endpoint,
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_UNLINK,
-                                strlen(METHOD_HIBUS_BUSYBOX_LS)))
+                                strlen(METHOD_HIBUS_BUSYBOX_UNLINK)))
     {
         ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
         goto failed;
@@ -1058,7 +807,7 @@ char * touchFile(hibus_conn* conn, const char* from_endpoint,
 
     // get procedure name
     if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_TOUCH,
-                                strlen(METHOD_HIBUS_BUSYBOX_LS)))
+                                strlen(METHOD_HIBUS_BUSYBOX_TOUCH)))
     {
         ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
         goto failed;
