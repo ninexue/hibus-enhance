@@ -25,8 +25,7 @@ static struct busybox_procedure fs_procedure[] =
     {METHOD_HIBUS_BUSYBOX_RMDIR,    removeEmptyDirectory},
     {METHOD_HIBUS_BUSYBOX_MKDIR,    makeDirectory},
     {METHOD_HIBUS_BUSYBOX_UNLINK,   unlinkFile},
-    {METHOD_HIBUS_BUSYBOX_TOUCH,    touchFile},
-    {METHOD_HIBUS_BUSYBOX_CHDIR,    changeDirectory}
+    {METHOD_HIBUS_BUSYBOX_TOUCH,    touchFile}
 };
 
 static struct busybox_event fs_event [] = {};
@@ -153,100 +152,6 @@ static int remove_dir(char *dir)
     }
 
     return ret_code;
-}
-
-char * changeDirectory(hibus_conn* conn, const char* from_endpoint,
-                const char* to_method, const char* method_param, int *err_code)
-{
-    char * ret_string = malloc(128);
-    int ret_code = ERROR_BUSYBOX_OK;
-    hibus_json *jo = NULL;
-    hibus_json *jo_tmp = NULL;
-    uid_t euid;
-    const char *path = NULL;
-    char dirname[PATH_MAX] = {0, };
-    struct stat dict_stat;
-    hibus_user *user = (hibus_user *)hibus_conn_get_user_data(conn);
-
-    // get procedure name
-    if(strncasecmp(to_method, METHOD_HIBUS_BUSYBOX_CHDIR,
-                                strlen(METHOD_HIBUS_BUSYBOX_CHDIR)))
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_PROCEDURE;
-        goto failed;
-    }
-
-    // analyze json
-    jo = hibus_json_object_from_string(method_param, strlen(method_param), 2);
-    if(jo == NULL)
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_JSON;
-        goto failed;
-    }
-
-    // get euid
-    if(json_object_object_get_ex(jo, "euid", &jo_tmp) == 0)
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_JSON;
-        goto failed;
-    }
-
-    euid = json_object_get_int(jo_tmp);
-    change_euid(from_endpoint, euid);
-
-    // get working directory
-    if(json_object_object_get_ex(jo, "path", &jo_tmp) == 0)
-    {
-        ret_code = ERROR_BUSYBOX_WRONG_JSON;
-        goto failed;
-    }
-    path = json_object_get_string(jo_tmp);
-    if(path == NULL)
-    {
-        ret_code = ERROR_BUSYBOX_INVALID_PARAM;
-        goto failed;
-    }
-
-    if(path[0] != '/')
-    {
-        if(user->cwd[0] == '/')
-        {
-            strcat(dirname, user->cwd);
-            strcat(dirname, "/");
-            strcat(dirname, path);
-        }
-        else
-        {
-            ret_code = ERROR_BUSYBOX_WORKING_DIRECTORY;
-            goto failed;
-        }
-    }
-    else
-        strcpy(dirname, path);
-
-    if(stat(dirname, &dict_stat) < 0)
-    {
-           ret_code = ERROR_BUSYBOX_ENOENT;
-        goto failed;
-    }
-
-    if(!S_ISDIR(dict_stat.st_mode))
-    {
-           ret_code = ERROR_BUSYBOX_ENOTDIR;
-        goto failed;
-    }
-
-    strcpy(user->cwd, dirname);
-
-failed:
-    if(jo)
-        json_object_put (jo);
-
-    sprintf(ret_string, "{\"errCode\":%d, \"errMsg\":\"%s\"}", ret_code, op_errors[-1 * ret_code]);
-
-    restore_euid();
-
-    return ret_string;
 }
 
 char * listDirectory(hibus_conn* conn, const char* from_endpoint,

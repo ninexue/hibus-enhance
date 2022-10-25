@@ -54,6 +54,9 @@
 #define METHOD_HIBUS_BUSYBOX_TOUCH      "touch"
 #define METHOD_HIBUS_BUSYBOX_CHDIR      "chdir"
 #define METHOD_HIBUS_BUSYBOX_DF         "df"
+#define METHOD_HIBUS_BUSYBOX_SETENV     "setenv"
+#define METHOD_HIBUS_BUSYBOX_UNSETENV   "unsetenv"
+#define METHOD_HIBUS_BUSYBOX_GETENV     "getenv"
 
 #ifdef __cplusplus
 extern "C" {

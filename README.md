@@ -284,6 +284,73 @@
     }
 ```
 
+#### 获取环境变量
+
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/getenv`
+   + `euid`：调用者的有效用户ID；
+   + `envName`：要获取环境变量的`key`；
+```json
+    {
+        "euid": euid,
+        "envName":"key"
+    }
+```
+- 返回值：
+   + `value`: 环境变量；
+   + `errCode`：返回错误编码，见附表；
+   + `errMsg`：错误信息。
+```json
+    {
+        "value": "value"
+        "errCode":0,
+        "errMsg":"OK"
+    }
+```
+
+#### 设置环境变量
+
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/setenv`
+   + `euid`：调用者的有效用户ID；
+   + `envName`：要设置环境变量的`key`；
+   + `envValue`：要设置环境变量的`value`；
+```json
+    {
+        "euid": euid,
+        "envName":"key"
+        "envValue":"value"
+    }
+```
+- 返回值：
+   + `errCode`：返回错误编码，见附表；
+   + `errMsg`：错误信息。
+```json
+    {
+        "errCode":0,
+        "errMsg":"OK"
+    }
+```
+
+#### 删除环境变量
+
+- 过程名称：`@localhost/cn.fmsoft.hybridos.hibus/busybox/unsetenv`
+   + `euid`：调用者的有效用户ID；
+   + `envName`：要删除的环境变量的`key`；
+```json
+    {
+        "euid": euid,
+        "envName":"key"
+    }
+```
+- 返回值：
+   + `errCode`：返回错误编码，见附表；
+   + `errMsg`：错误信息。
+```json
+    {
+        "errCode":0,
+        "errMsg":"OK"
+    }
+```
+
 ### 错误代码表
 
 | 宏定义                          | errCode | errMsg                                        |
@@ -318,10 +385,11 @@
 | ERROR_BUSYBOX_EFBIG             | -27     | File is too large.                            |
 | ERROR_BUSYBOX_EINTR             | -28     | Interrupted system call.                      |
 | ERROR_BUSYBOX_EMFILE            | -29     | Too many open files.                          |
-| ERROR_BUSYBOX_INVALID_PARAM     | -30     | Invalid parameter.                            |
-| ERROR_BUSYBOX_INSUFFICIENT_MEM  | -31     | Insufficient memory.                          |
-| ERROR_BUSYBOX_CONNECT_HIBUS     | -32     | Can not connect to Hibus server.              |
-| ERROR_BUSYBOX_WRONG_PROCEDURE   | -33     | Wrong procedure name.                         |
-| ERROR_BUSYBOX_WRONG_JSON        | -34     | Wrong Json format.                            |
-| ERROR_BUSYBOX_WORKING_DIRECTORY | -35     | Current working directory has not benn set.   |
-| ERROR_BUSYBOX_UNKONOWN          | -36     | Unknow error.                                 |
+| ERROR_BUSYBOX_ENOSYS            | -30     | System does not support.                      |
+| ERROR_BUSYBOX_INVALID_PARAM     | -31     | Invalid parameter.                            |
+| ERROR_BUSYBOX_INSUFFICIENT_MEM  | -32     | Insufficient memory.                          |
+| ERROR_BUSYBOX_CONNECT_HIBUS     | -33     | Can not connect to Hibus server.              |
+| ERROR_BUSYBOX_WRONG_PROCEDURE   | -34     | Wrong procedure name.                         |
+| ERROR_BUSYBOX_WRONG_JSON        | -35     | Wrong Json format.                            |
+| ERROR_BUSYBOX_WORKING_DIRECTORY | -36     | Current working directory has not benn set.   |
+| ERROR_BUSYBOX_UNKONOWN          | -37     | Unknow error.                                 |

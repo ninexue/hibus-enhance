@@ -66,6 +66,19 @@ bool wildcard_cmp(const char *text, const char *pattern);
  * ModifyRecord:
  * *************************************************************************/
 int get_error_code(void);
+
+
+struct env_param * get_env(struct env_param *head, const char *key);
+
+struct env_param *
+add_env(struct env_param **head, const char *key, const char *value);
+
+bool remove_env(struct env_param **head, const char *key);
+
+struct env_param *
+modify_env(struct env_param **head, const char *key, const char *value);
+
+
 #ifdef __cplusplus
 }
 #endif

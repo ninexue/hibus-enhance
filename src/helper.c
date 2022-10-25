@@ -7,11 +7,14 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <string.h>
-#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fcntl.h>
 #include <hibus.h>
 
 #include "hibus_busybox.h"
 #include "helper.h"
+#include "interface.h"
 
 const char *op_errors[] = {
     "Success.",                                     // OK
@@ -248,3 +251,121 @@ bool wildcard_cmp(const char *text, const char *pattern)
     return *pattern == *text;
 }
 
+
+struct env_param * get_env(struct env_param *head, const char *key)
+{
+    struct env_param *env = head;
+
+    if(head == NULL)
+        return NULL;
+
+    while(env)
+    {
+        if(env->key)
+        {
+            if(strcmp(env->key, key) == 0)
+                break;
+        }
+        env = env->next;
+    }
+
+    return env;
+}
+
+struct env_param *
+add_env(struct env_param **head, const char *key, const char *value)
+{
+    struct env_param *env = NULL;
+    struct env_param *tmp_env = NULL;
+
+    if((key == NULL) || (value == NULL))
+        return NULL;
+
+    if(*head)
+    {
+        env = get_env(*head, key);
+        if(env)
+        {
+            if(env->value)
+                free(env->value);
+            env->value = strdup(value);
+        }
+    }
+
+    if(env == NULL)
+    {
+        env = calloc(sizeof(struct env_param), 1);
+
+        if(*head == NULL)
+            *head = env;
+        else
+        {
+            tmp_env = *head;
+            while(tmp_env->next)
+                tmp_env = tmp_env->next;
+            tmp_env->next = env;
+        }
+        env->key = strdup(key);
+        env->value = strdup(value);
+    }
+
+    return env;
+}
+
+bool remove_env(struct env_param **head, const char *key)
+{
+    struct env_param *env = *head;
+    struct env_param *tmp_env = *head;
+    bool ret = false;
+
+    if((*head == NULL) || (key == NULL))
+        return false;
+
+    while(env)
+    {
+        if(env->key)
+        {
+            if(strcmp(env->key, key) == 0)
+            {
+                if(env == *head)
+                    *head = env->next;
+                else
+                    tmp_env->next = env->next;
+
+                if(env->key)
+                    free(env->key);
+                if(env->value)
+                    free(env->value);
+                free(env);
+
+                ret = true;
+                break;
+            }
+        }
+        tmp_env = env;
+        env = env->next;
+    }
+
+    return ret;
+}
+
+struct env_param *
+modify_env(struct env_param **head, const char *key, const char *value)
+{
+    struct env_param *env = NULL;
+
+    if((key == NULL) || (value == NULL))
+        return NULL;
+
+    env = get_env(*head, key);
+    if(env == NULL)
+        env = add_env(head, key, value);
+    else
+    {
+        if(env->value)
+            free(env->value);
+        env->value = strdup(value);
+    }
+
+    return env;
+}

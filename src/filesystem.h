@@ -30,18 +30,6 @@ void fs_revoke(hibus_conn *hibus_context);
 
 
 /****************************************************************************
- * Subroutine:  changeDirectory
- * Function:    change current working directory.
- * Input:       Hibus register procedure input
- * Output:      Hibus register procedure output
- * Description:
- * Date:        2022/07/20
- * ModifyRecord:
- * *************************************************************************/
-char * changeDirectory(PROCEDURE_PARAM);
-
-
-/****************************************************************************
  * Subroutine:  listDirectory
  * Function:    list all files and directorys in an indicated directory.
  * Input:       Hibus register procedure input

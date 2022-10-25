@@ -30,6 +30,18 @@ void sys_revoke(hibus_conn *hibus_context);
 
 
 /****************************************************************************
+ * Subroutine:  changeDirectory
+ * Function:    change current working directory.
+ * Input:       Hibus register procedure input
+ * Output:      Hibus register procedure output
+ * Description:
+ * Date:        2022/07/20
+ * ModifyRecord:
+ * *************************************************************************/
+char * changeDirectory(PROCEDURE_PARAM);
+
+
+/****************************************************************************
  * Subroutine:  getDiskInfo
  * Function:    get space information of current file system.
  * Input:       Hibus register procedure input
@@ -39,6 +51,42 @@ void sys_revoke(hibus_conn *hibus_context);
  * ModifyRecord:
  * *************************************************************************/
 char * getDiskInfo(PROCEDURE_PARAM);
+
+
+/****************************************************************************
+ * Subroutine:  hibus_setenv
+ * Function:    get space information of current file system.
+ * Input:       Hibus register procedure input
+ * Output:      Hibus register procedure output
+ * Description:
+ * Date:        2022/07/20
+ * ModifyRecord:
+ * *************************************************************************/
+char * hibus_setenv(PROCEDURE_PARAM);
+
+
+/****************************************************************************
+ * Subroutine:  hibus_unsetenv
+ * Function:    get space information of current file system.
+ * Input:       Hibus register procedure input
+ * Output:      Hibus register procedure output
+ * Description:
+ * Date:        2022/07/20
+ * ModifyRecord:
+ * *************************************************************************/
+char * hibus_unsetenv(PROCEDURE_PARAM);
+
+
+/****************************************************************************
+ * Subroutine:  hibus_getenv
+ * Function:    get space information of current file system.
+ * Input:       Hibus register procedure input
+ * Output:      Hibus register procedure output
+ * Description:
+ * Date:        2022/07/20
+ * ModifyRecord:
+ * *************************************************************************/
+char * hibus_getenv(PROCEDURE_PARAM);
 
 
 #ifdef __cplusplus

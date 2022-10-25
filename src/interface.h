@@ -16,15 +16,25 @@
 #define	PROCEDURE_PARAM	hibus_conn* conn, const char* from_endpoint, \
             const char* to_method, const char* method_param, int *err_code
 
+// for register procedure
 struct busybox_procedure
 {
     const char *name;
     hibus_method_handler handler;
 };
 
+// for register event
 struct busybox_event
 {
     const char *name;
+};
+
+// for store user define environment parameter
+struct env_param
+{
+    char *key;
+    char *value;
+    struct env_param *next;
 };
 
 // structure for hibus user
@@ -33,6 +43,7 @@ struct _hibus_user
     int fd;
     hibus_conn *context;
     char cwd[PATH_MAX];
+    struct env_param *env;
     void *data;
 };
 
